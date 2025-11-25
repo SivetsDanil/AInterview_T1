@@ -1,0 +1,658 @@
+/* Базовые стили */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #00AAE5;
+    --primary-dark: #0090C5;
+    --bg-primary: #0E1013;
+    --bg-secondary: #1A1C20;
+    --bg-tertiary: #1E1E1E;
+    --accent: #00E5A8;
+    --text-primary: #FFFFFF;
+    --text-secondary: #A0A0A0;
+    --border: #2D2D2D;
+}
+
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    height: 100vh;
+}
+
+.container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 20px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Уникальный хедер */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    margin-bottom: 30px;
+    border-bottom: 2px solid;
+    border-image: linear-gradient(90deg, transparent, var(--primary), transparent) 1;
+}
+
+.logo {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo::before {
+    content: '<3';
+    font-size: 32px;
+}
+
+/* Уникальные кнопки */
+.btn {
+    padding: 14px 28px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 170, 229, 0.3);
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 170, 229, 0.4);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--text-primary);
+    border: 2px solid var(--border);
+}
+
+.btn-secondary:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.btn-danger {
+    background: #DC2626;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #B91C1C;
+}
+
+/* Прогресс и таймер */
+.progress-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.progress-bar {
+    width: 300px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.timer {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    padding: 8px 16px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+}
+
+/* СТРАНИЦА 1: Уникальный онбординг */
+.welcome-section {
+    text-align: center;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.welcome-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, var(--text-primary), var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.welcome-subtitle {
+    font-size: 1.3rem;
+    color: var(--text-secondary);
+    margin-bottom: 60px;
+}
+
+.direction-subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+}
+
+.start-btn-container {
+    margin-top: 40px;
+}
+
+#start-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Уникальные карточки направлений */
+.direction-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin: 50px 0;
+}
+
+.direction-card {
+    background: var(--bg-secondary);
+    padding: 30px;
+    border-radius: 16px;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.direction-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 170, 229, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.direction-card:hover::before {
+    left: 100%;
+}
+
+.direction-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-3px);
+}
+
+.direction-card.selected {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, var(--bg-secondary), rgba(0, 170, 229, 0.1));
+}
+
+.direction-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    color: var(--primary);
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.direction-icon {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.direction-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.direction-desc {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* СТРАНИЦА 2: Уникальный интерфейс IDE */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+}
+
+.interview-container {
+    display: flex;
+    flex: 1;
+    gap: 20px;
+    height: calc(100vh - 140px);
+}
+
+/* Левая панель - Задача */
+.problem-panel {
+    width: 28%;
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    border: 2px solid var(--border);
+}
+
+.panel-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border);
+    background: var(--bg-tertiary);
+    border-radius: 16px 16px 0 0;
+}
+
+.tab {
+    padding: 16px 24px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    transition: all 0.2s ease;
+    flex: 1;
+    text-align: center;
+}
+
+.tab:hover {
+    color: var(--text-primary);
+}
+
+.tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: rgba(0, 170, 229, 0.05);
+}
+
+.panel-content {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+}
+
+.problem-content {
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.code-block {
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 20px 0;
+    font-family: 'Fira Code', monospace;
+    color: var(--text-primary);
+    border-left: 4px solid var(--primary);
+}
+
+.run-tests-btn {
+    width: 100%;
+    margin-top: 20px;
+}
+
+/* Центральная панель - Редактор */
+.editor-panel {
+    flex: 1;
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    border: 2px solid var(--border);
+}
+
+.editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-tertiary);
+    border-bottom: 2px solid var(--border);
+    padding: 15px 24px;
+    border-radius: 16px 16px 0 0;
+}
+
+.language-select {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 10px 15px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.editor-area {
+    flex: 1;
+    background: var(--bg-tertiary);
+    position: relative;
+}
+
+.code-editor {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-tertiary);
+    border: none;
+    color: #D4D4D4;
+    font-family: 'Fira Code', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 24px;
+    resize: none;
+    outline: none;
+}
+
+.console-panel {
+    height: 200px;
+    background: var(--bg-tertiary);
+    border-top: 2px solid var(--border);
+}
+
+.console-content {
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+    font-family: 'Fira Code', monospace;
+    color: var(--accent);
+}
+
+/* Правая панель - Чат */
+.chat-panel {
+    width: 28%;
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    border: 2px solid var(--border);
+}
+
+.chat-header {
+    padding: 20px 24px;
+    border-bottom: 2px solid var(--border);
+    font-weight: 700;
+    font-size: 1.1rem;
+    background: var(--bg-tertiary);
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.chat-header::before {
+    content: '<3';
+    color: var(--primary);
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.message {
+    padding: 14px 18px;
+    border-radius: 14px;
+    max-width: 85%;
+    line-height: 1.5;
+}
+
+.message-ai {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+.message-user {
+    background: var(--primary);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-input-container {
+    padding: 20px;
+    border-top: 2px solid var(--border);
+    display: flex;
+    gap: 12px;
+    background: var(--bg-tertiary);
+    border-radius: 0 0 16px 16px;
+}
+
+.chat-input {
+    flex: 1;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.chat-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* СТРАНИЦА 3: Уникальные результаты */
+.results-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.results-header h1 {
+    font-size: 36px;
+    margin-bottom: 16px;
+}
+
+.results-header p {
+    color: var(--text-secondary);
+    font-size: 18px;
+}
+
+.results-container {
+    display: flex;
+    gap: 24px;
+    flex: 1;
+}
+
+.results-left {
+    flex: 1;
+}
+
+.results-right {
+    width: 35%;
+}
+
+.score-card {
+    text-align: center;
+    padding: 40px;
+    margin-bottom: 24px;
+    background: var(--bg-secondary);
+    border-radius: 20px;
+    border: 2px solid var(--border);
+    position: relative;
+}
+
+.score-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    border-radius: 20px 20px 0 0;
+}
+
+.score-main {
+    font-size: 4rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 8px;
+}
+
+.score-level {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.radar-placeholder {
+    height: 300px;
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    border: 2px solid var(--border);
+    border: 2px dashed var(--border);
+}
+
+.placeholder-text {
+    color: var(--text-secondary);
+    text-align: center;
+    font-style: italic;
+}
+
+.placeholder-hint {
+    color: var(--border);
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.placeholder-icon {
+    font-size: 3rem;
+    text-align: center;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.2s ease;
+}
+
+.task-item:hover {
+    background: var(--bg-tertiary);
+}
+
+.task-item:last-child {
+    border-bottom: none;
+}
+
+.task-item.placeholder {
+    opacity: 0.7;
+}
+
+.task-item.placeholder .score-placeholder {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.score-passed { color: #10B981; }
+.score-average { color: #F59E0B; }
+.score-failed { color: #EF4444; }
+
+.bullet-list {
+    list-style: none;
+    margin-top: 16px;
+}
+
+.bullet-list li {
+    padding: 10px 0;
+    color: var(--text-secondary);
+    position: relative;
+    padding-left: 20px;
+    transition: color 0.2s ease;
+}
+
+.bullet-list li:hover {
+    color: var(--text-primary);
+}
+
+.bullet-list li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--primary);
+    font-weight: bold;
+}
+
+.placeholder-list .placeholder-item {
+    color: var(--text-secondary) !important;
+    font-style: italic;
+}
+
+.results-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 32px;
+}
+
+/* Уникальные акценты */
+.direction-card,
+.problem-panel,
+.editor-panel,
+.chat-panel,
+.score-card,
+.radar-placeholder {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Простые hover эффекты */
+.tab:hover,
+.btn:hover,
+.direction-card:hover {
+    transition: all 0.2s ease;
+}
