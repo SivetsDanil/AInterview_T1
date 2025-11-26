@@ -8,25 +8,17 @@
   </head>
   <body>
     <!-- Модальное окно для ввода ФИО -->
-    <div id="fioModal" class="modal-overlay">
+    <div id="fioModal" class="modal">
       <div class="modal-content">
-        <div class="modal-icon">👤</div>
-        <h2>Введите ваши данные</h2>
-        <p>Для сохранения результатов введите ваше ФИО</p>
-
-        <div class="input-group">
-          <input
-            type="text"
-            id="userFIO"
-            class="text-input"
-            placeholder="Иванов Иван Иванович"
-            maxlength="100"
-          />
-          <div class="input-hint">Максимум 100 символов</div>
-        </div>
-
+        <h3>Введите ваши данные</h3>
+        <p>Для отображения результатов введите ваше ФИО</p>
+        <input
+          type="text"
+          id="fioInput"
+          placeholder="Иванов Иван Иванович"
+          maxlength="100"
+        />
         <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="goHome()">Отмена</button>
           <button class="btn btn-primary" onclick="saveFIO()">
             Продолжить
           </button>
@@ -34,8 +26,7 @@
       </div>
     </div>
 
-    <!-- Основной контент страницы (скрыт пока не введено ФИО) -->
-    <div id="resultsContent" class="container">
+    <div class="container">
       <header class="header">
         <div class="logo">SciBox Interview</div>
       </header>
@@ -127,71 +118,52 @@
     </div>
 
     <script>
-      // Функция сохранения ФИО
+      // Показываем модальное окно при загрузке страницы
+      document.addEventListener("DOMContentLoaded", function () {
+        // Проверяем, не вводил ли пользователь ФИО ранее
+        const savedFIO = localStorage.getItem("userFIO");
+        if (!savedFIO) {
+          showFIOModal();
+        } else {
+          // Если ФИО уже сохранено, можно использовать его при необходимости
+          console.log("ФИО пользователя:", savedFIO);
+        }
+      });
+
+      function showFIOModal() {
+        const modal = document.getElementById("fioModal");
+        modal.style.display = "flex";
+
+        // Фокус на поле ввода
+        const fioInput = document.getElementById("fioInput");
+        fioInput.focus();
+
+        // Обработка нажатия Enter
+        fioInput.addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            saveFIO();
+          }
+        });
+      }
+
       function saveFIO() {
-        const fioInput = document.getElementById("userFIO");
+        const fioInput = document.getElementById("fioInput");
         const fio = fioInput.value.trim();
 
-        if (!fio) {
+        if (fio === "") {
           alert("Пожалуйста, введите ваше ФИО");
-          fioInput.focus();
-          return;
-        }
-
-        if (fio.length > 100) {
-          alert("ФИО не должно превышать 100 символов");
-          fioInput.focus();
           return;
         }
 
         // Сохраняем ФИО в localStorage
         localStorage.setItem("userFIO", fio);
 
-        // Скрываем модальное окно и показываем результаты
+        // Скрываем модальное окно
         document.getElementById("fioModal").style.display = "none";
-        document.getElementById("resultsContent").style.display = "block";
 
-        // Можно также отправить на сервер
-        saveResultsToServer(fio);
+        // Здесь можно добавить логику использования ФИО, если нужно
+        console.log("Сохраненное ФИО:", fio);
       }
-
-      // Функция отправки результатов на сервер
-      function saveResultsToServer(fio) {
-        const results = {
-          fio: fio,
-          completedTasks: localStorage.getItem("completedTasks") || 0,
-          totalTasks: localStorage.getItem("totalTasks") || 4,
-          timeSpent: localStorage.getItem("timeSpent") || 0,
-          timestamp: new Date().toISOString(),
-        };
-
-        // Здесь будет запрос к вашему бэкенду
-        console.log("Сохранение результатов:", results);
-      }
-
-      // Функция проверки - есть ли уже сохраненное ФИО
-      function checkExistingFIO() {
-        const existingFIO = localStorage.getItem("userFIO");
-        if (existingFIO) {
-          // Если ФИО уже есть, сразу показываем результаты
-          document.getElementById("fioModal").style.display = "none";
-          document.getElementById("resultsContent").style.display = "block";
-        }
-      }
-
-      // Обработчик Enter в поле ввода
-      document
-        .getElementById("userFIO")
-        .addEventListener("keypress", function (e) {
-          if (e.key === "Enter") {
-            saveFIO();
-          }
-        });
-
-      // Проверяем при загрузке страницы
-      document.addEventListener("DOMContentLoaded", function () {
-        checkExistingFIO();
-      });
 
       function goHome() {
         window.location.href = "/";
@@ -203,6 +175,3 @@
     </script>
   </body>
 </html>
-
-
-
