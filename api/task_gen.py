@@ -1,6 +1,5 @@
 from __future__ import annotations
 import json
-import os
 from typing import Any, Dict, List, Optional
 from openai import OpenAI
 
@@ -337,48 +336,3 @@ class TaskGenerator:
                 "error": str(e),
                 "task_id": task_id,
             }
-
-
-if __name__ == "__main__":
-    # Пример использования — значения лучше передавать через env или конфиг
-    generator = TaskGenerator(
-        api_key="sk-gqlpOmmxNrBvLyv766GXYg",
-        base_url="https://llm.t1v.scibox.tech/v1",
-        model="qwen3-coder-30b-a3b-instruct-fp8",
-    )
-
-    # 1. Генерация задачи
-    task = generator.generate_task(
-        position="Backend development",
-        difficulty="middle",
-    )
-    print("=== Сгенерированная задача ===")
-    print(json.dumps(task, ensure_ascii=False, indent=2))
-
-    if "id" not in task:
-        raise SystemExit("Не удалось сгенерировать задачу (нет id).")
-
-    task_id = task["id"]
-
-    # 2. Генерация эталонных решений
-    solutions = generator.generate_solutions(
-        task_id=task_id,
-        languages=["python", "cpp", "java", "go"],
-    )
-    print("=== Эталонные решения ===")
-    print(json.dumps(solutions, ensure_ascii=False, indent=2))
-
-    # 3. Пример: проверка кода кандидата
-#     candidate_code = """
-# def solve():
-#     # Здесь должен быть код кандидата
-#     pass
-# """
-#
-#     review = generator.review_code(
-#         task_id=task_id,
-#         user_code=candidate_code,
-#         language="python",
-#     )
-#     print("=== Ревью решения ===")
-#     print(json.dumps(review, ensure_ascii=False, indent=2))

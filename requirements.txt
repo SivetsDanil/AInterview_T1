@@ -1,6 +1,8 @@
 aniso8601==9.0.1
 blinker==1.8.2
 click==8.1.7
+requests>=2.32.0
+python-dotenv>=1.2.0
 colorama==0.4.6
 Flask==3.0.3
 Flask-Login==0.6.3
@@ -19,6 +21,9 @@ setuptools==70.3.0
 six==1.16.0
 SQLAlchemy==2.0.29
 sqlalchemy-serializer==1.4.22
-typing_extensions==4.12.2
+typing_extensions>=4.15.0
 Werkzeug==3.0.4
 WTForms==3.1.2
+openai>=2.8.0
+pydantic>=2.0.0
+pydantic-core>=2.0.0
