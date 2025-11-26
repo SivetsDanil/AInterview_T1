@@ -1,100 +1,113 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SciBox Interview - Результаты</title>
-    <link rel="stylesheet" href="../static/css/styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="../static/css/styles.css" />
+  </head>
+  <body>
     <div class="container">
-        <header class="header">
-            <div class="logo">SciBox Interview</div>
-        </header>
+      <header class="header">
+        <div class="logo">SciBox Interview</div>
+      </header>
 
-        <div class="results-header">
-            <h1>Собеседование завершено!</h1>
-            <p>Ваши результаты обработаны AI-системой</p>
-        </div>
+      <div class="results-header">
+        <h1>Собеседование завершено!</h1>
+        <p>Ваши результаты обработаны AI-системой</p>
+      </div>
 
-        <div class="results-container">
-            <div class="results-left">
-                <!-- Общий счет -->
-                <div class="card score-card">
-                    <div class="score-placeholder">
-                        <div class="placeholder-text">Общий балл</div>
-                        <div class="score-main">--/10</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- График навыков -->
-                <div class="card">
-                    <h3>Анализ навыков</h3>
-                    <div class="radar-placeholder">
-                        <div class="placeholder-icon">📊</div>
-                        <div class="placeholder-text">График навыков будет сгенерирован AI</div>
-                        <div class="placeholder-hint">Алгоритмы • Оптимальность • Читаемость • Коммуникация</div>
-                    </div>
-                </div>
-
-                <!-- Результаты по задачам -->
-                <div class="card">
-                    <h3>Результаты по задачам</h3>
-                    <div class="tasks-list">
-                        <div class="task-item placeholder">
-                            <span>Загрузка результатов задач...</span>
-                            <span class="score-placeholder">--/10</span>
-                        </div>
-                        <div class="task-item placeholder">
-                            <span>AI анализирует ваши решения</span>
-                            <span class="score-placeholder">--/10</span>
-                        </div>
-                    </div>
-                </div>
+      <div class="results-container">
+        <div class="results-left">
+          <!-- Общий счет -->
+          <div class="card score-card">
+            <div class="score-placeholder">
+              <div class="placeholder-text">Общий балл</div>
+              <div class="score-main">--/10</div>
             </div>
+          </div>
 
-            <div class="results-right">
-                <!-- Сильные стороны -->
-                <div class="card">
-                    <h3>Сильные стороны</h3>
-                    <ul class="bullet-list placeholder-list">
-                        <li class="placeholder-item">AI определяет ваши сильные стороны</li>
-                        <li class="placeholder-item">На основе качества кода и решений</li>
-                        <li class="placeholder-item">И анализа коммуникации</li>
-                    </ul>
-                </div>
-
-                <!-- Рекомендации -->
-                <div class="card">
-                    <h3>Рекомендации</h3>
-                    <ul class="bullet-list placeholder-list">
-                        <li class="placeholder-item">Персональные рекомендации по развитию</li>
-                        <li class="placeholder-item">На основе результатов собеседования</li>
-                        <li class="placeholder-item">И выявленных зон роста</li>
-                    </ul>
-                </div>
+          <!-- График навыков -->
+          <div class="card">
+            <h3>Анализ навыков</h3>
+            <div class="radar-placeholder">
+              <div class="placeholder-icon">📊</div>
+              <div class="placeholder-text">
+                График навыков будет сгенерирован AI
+              </div>
+              <div class="placeholder-hint">
+                Алгоритмы • Оптимальность • Читаемость • Коммуникация
+              </div>
             </div>
+          </div>
+
+          <!-- Результаты по задачам -->
+          <div class="card">
+            <h3>Результаты по задачам</h3>
+            <div class="tasks-list">
+              <div class="task-item placeholder">
+                <span>Загрузка результатов задач...</span>
+                <span class="score-placeholder">--/10</span>
+              </div>
+              <div class="task-item placeholder">
+                <span>AI анализирует ваши решения</span>
+                <span class="score-placeholder">--/10</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="results-actions">
-            <button class="btn btn-secondary" onclick="goHome()">Вернуться на главную</button>
-            <button class="btn btn-primary" onclick="exportResults()">Экспорт отчета (PDF)</button>
+        <div class="results-right">
+          <!-- Сильные стороны -->
+          <div class="card">
+            <h3>Сильные стороны</h3>
+            <ul class="bullet-list placeholder-list">
+              <li class="placeholder-item">
+                AI определяет ваши сильные стороны
+              </li>
+              <li class="placeholder-item">
+                На основе качества кода и решений
+              </li>
+              <li class="placeholder-item">И анализа коммуникации</li>
+            </ul>
+          </div>
+
+          <!-- Рекомендации -->
+          <div class="card">
+            <h3>Рекомендации</h3>
+            <ul class="bullet-list placeholder-list">
+              <li class="placeholder-item">
+                Персональные рекомендации по развитию
+              </li>
+              <li class="placeholder-item">
+                На основе результатов собеседования
+              </li>
+              <li class="placeholder-item">И выявленных зон роста</li>
+            </ul>
+          </div>
         </div>
+      </div>
+
+      <div class="results-actions">
+        <button class="btn btn-secondary" onclick="goHome()">
+          Вернуться на главную
+        </button>
+        <button class="btn btn-primary" onclick="exportResults()">
+          Экспорт отчета (PDF)
+        </button>
+      </div>
     </div>
 
     <script>
-        function goHome() {
-            window.location.href = '/';
-        }
-        
-        function exportResults() {
-            alert('Отчет будет доступен после обработки результатов');
-        }
-    </script>
-</body>
+      function goHome() {
+        window.location.href = "/";
+      }
 
+      function exportResults() {
+        alert("Отчет будет доступен после обработки результатов");
+      }
+    </script>
+  </body>
 </html>
+
 
