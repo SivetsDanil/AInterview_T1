@@ -5,7 +5,6 @@ const languageSelect = document.querySelector('.language-select');
 const codeEditor = document.querySelector('.code-editor');
 const timerDisplay = document.querySelector('.timer');
 
-// Базовые шаблоны кода для разных языков
 const languageTemplates = {
     'python': `def solve():
     # Ваше решение здесь
@@ -47,34 +46,26 @@ import "fmt"
 func solve() {
     // Ваше решение здесь
 }
-
-// func main() {
-//     solve()
-// }
 `,
 };
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
-    // Устанавливаем начальный шаблон и запускаем таймер
     codeEditor.value = languageTemplates[languageSelect.value];
-    startTimer(45 * 60); // 45 минут в секундах
+    startTimer(45 * 60);
 });
 
 
-// Обработчик изменения языка
 languageSelect.addEventListener('change', (e) => {
     const selectedLang = e.target.value;
-    // Устанавливаем соответствующий шаблон
     codeEditor.value = languageTemplates[selectedLang] || '// Выберите язык...';
 });
 
 
-// Обработчики событий, которые были в исходном коде
-// Убедитесь, что все эти элементы существуют в DOM
-if (sendBtn) sendBtn.addEventListener('click', sendMessage);
-if (runTestsBtn) runTestsBtn.addEventListener('click', runTests);
-if (messageInput) messageInput.addEventListener('keypress', function (e) {
+
+sendBtn.addEventListener('click', sendMessage);
+runTestsBtn.addEventListener('click', runTests);
+messageInput.addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         sendMessage();
     }
@@ -108,12 +99,41 @@ function startTimer(durationInSeconds) {
 }
 
 
-function sendMessage() {
+async function sendMessage() {
     const input = document.querySelector('.chat-input');
     const message = input.value.trim();
-    
-    if (!message) {
-        return;
+
+    if (!message) return;
+
+    // Добавляем сообщение пользователя
+    addMessage(message, 'user');
+    input.value = '';
+
+    // Показываем "печатает..." или заглушку, пока ждём ответ
+    const loadingId = 'loading-' + Date.now();
+
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: message })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.reply) {
+            addMessage(data.reply, 'ai');
+        } else {
+            document.getElementById(loadingId)?.remove();
+            addMessage(`Ошибка: ${data.error || 'Неизвестная ошибка'}`, 'ai');
+        }
+    } catch (error) {
+        document.getElementById(loadingId)?.remove();
+        addMessage(`Не удалось подключиться к серверу`, 'ai');
+        console.error('Ошибка отправки:', error);
+
     }
     
     // 1. Сначала вызываем reCAPTCHA API, чтобы получить токен
@@ -199,7 +219,6 @@ function addMessage(text, sender) {
     messageElement.className = `message message-${sender}`;
     messageElement.textContent = text;
     messagesContainer.appendChild(messageElement);
-    // Прокрутка вниз
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
@@ -209,8 +228,75 @@ function runTests() {
 }
 
 function endInterview() {
-    // ИЗМЕНЕНИЕ: Замена confirm() на console.log()
-    console.warn('Завершение собеседования подтверждено. Перенаправление на страницу результатов.');
-    // В реальном приложении здесь будет логика отображения модального окна
-    window.location.href = 'results'; 
+
+    if (confirm('Завершить собеседование?')) {
+        // Замените на реальный URL
+        window.location.href = 'results'; 
+    }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const editor = document.querySelector('.code-editor');
+    if (!editor) return;
+
+    editor.addEventListener('paste', async function (e) {
+        e.preventDefault(); // ← блокируем вставку
+
+        const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ff4d4d;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-family: sans-serif;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 10000;
+            animation: fadeInOut 3s ease forwards;
+        `;
+        toast.innerHTML = 'Вставка кода запрещена.<br>Пишите самостоятельно.';
+        document.body.appendChild(toast);
+
+        // Добавляем CSS-анимацию (если её ещё нет)
+        if (!document.querySelector('#toast-style')) {
+            const style = document.createElement('style');
+            style.id = 'toast-style';
+            style.textContent = `
+                @keyframes fadeInOut {
+                    0% { opacity: 0; transform: translateY(-20px); }
+                    10% { opacity: 1; transform: translateY(0); }
+                    90% { opacity: 1; transform: translateY(0); }
+                    100% { opacity: 0; transform: translateY(-20px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Автоудаление тоста через 3 сек
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 2700);
+
+        try {
+            await fetch('/api/code-paste', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code: pastedText.trim().substring(0, 1000),
+                    timestamp: Date.now(),
+                    type: 'blocked_paste'
+                })
+            });
+        } catch (err) {
+            console.warn('Не удалось отправить лог вставки:', err);
+        }
+    });
+});
+

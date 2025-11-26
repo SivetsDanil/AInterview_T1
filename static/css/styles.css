@@ -245,10 +245,87 @@ body {
 }
 
 /* СТРАНИЦА 2: интерфейс IDE */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    margin-bottom: 30px;
+    border-bottom: 2px solid;
+    border-image: linear-gradient(90deg, transparent, var(--primary), transparent) 1;
+    gap: 40px;
+}
+
+.logo {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 60px;
+    gap: 40px;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.progress-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: var(--bg-secondary);
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 2px solid var(--border);
+    min-width: 400px;
+}
+
+.progress-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    font-size: 12px;
+    color: var(--text-secondary);
+    min-width: 80px;
+}
+
+.progress-info span:first-child {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.progress-bar {
+    width: 120px;
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+.timer {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary);
+    padding: 8px 16px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    min-width: 80px;
+    text-align: center;
+    transition: all 0.3s ease;
 }
 
 .interview-container {
@@ -256,16 +333,19 @@ body {
     flex: 1;
     gap: 20px;
     height: calc(100vh - 140px);
+    min-height: 600px;
 }
 
 /* Левая панель - Задача */
 .problem-panel {
     width: 28%;
+    min-width: 300px;
     background: var(--bg-secondary);
     border-radius: 16px;
     display: flex;
     flex-direction: column;
     border: 2px solid var(--border);
+    overflow: hidden;
 }
 
 .panel-tabs {
@@ -284,27 +364,53 @@ body {
     transition: all 0.2s ease;
     flex: 1;
     text-align: center;
+    white-space: nowrap;
 }
 
 .tab:hover {
     color: var(--text-primary);
+    background: rgba(0, 170, 229, 0.05);
 }
 
 .tab.active {
     color: var(--primary);
     border-bottom-color: var(--primary);
-    background: rgba(0, 170, 229, 0.05);
+    background: rgba(0, 170, 229, 0.1);
 }
 
 .panel-content {
     flex: 1;
     padding: 24px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .problem-content {
     color: var(--text-secondary);
     line-height: 1.7;
+    flex: 1;
+}
+
+.problem-content h3 {
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    font-size: 1.4rem;
+}
+
+.problem-content h4 {
+    color: var(--text-primary);
+    margin: 20px 0 12px 0;
+    font-size: 1.1rem;
+}
+
+.problem-content ul, .problem-content ol {
+    margin: 12px 0;
+    padding-left: 24px;
+}
+
+.problem-content li {
+    margin: 8px 0;
 }
 
 .code-block {
@@ -316,11 +422,19 @@ body {
     font-family: 'Fira Code', monospace;
     color: var(--text-primary);
     border-left: 4px solid var(--primary);
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+.code-block code {
+    font-family: 'Fira Code', monospace;
+    font-size: 13px;
 }
 
 .run-tests-btn {
     width: 100%;
     margin-top: 20px;
+    padding: 12px;
 }
 
 /* Центральная панель - Редактор */
@@ -331,6 +445,8 @@ body {
     display: flex;
     flex-direction: column;
     border: 2px solid var(--border);
+    overflow: hidden;
+    min-width: 400px;
 }
 
 .editor-header {
@@ -350,12 +466,19 @@ body {
     border: 2px solid var(--border);
     border-radius: 8px;
     font-size: 14px;
+    min-width: 120px;
+}
+
+.language-select:focus {
+    outline: none;
+    border-color: var(--primary);
 }
 
 .editor-area {
     flex: 1;
     background: var(--bg-tertiary);
     position: relative;
+    min-height: 300px;
 }
 
 .code-editor {
@@ -370,15 +493,22 @@ body {
     padding: 24px;
     resize: none;
     outline: none;
+    tab-size: 4;
+}
+
+.code-editor:focus {
+    outline: none;
 }
 
 .console-panel {
     height: 200px;
+    min-height: 150px;
     background: var(--bg-tertiary);
     border-top: 2px solid var(--border);
+    display: flex;
+    flex-direction: column;
 }
 
-/* Стили для консоли и кнопки очистки */
 .console-header {
     display: flex;
     justify-content: space-between;
@@ -398,39 +528,35 @@ body {
     font-size: 12px;
     cursor: pointer;
     transition: color 0.2s ease;
+    border-radius: 4px;
 }
 
 .console-header .btn-text:hover {
     color: var(--primary);
-    background: transparent;
+    background: rgba(0, 170, 229, 0.1);
 }
 
 .console-content {
     padding: 20px;
-    height: calc(100% - 49px); 
+    flex: 1;
     overflow-y: auto;
     font-family: 'Fira Code', monospace;
     color: var(--accent);
     line-height: 1.4;
     white-space: pre-wrap;
-}
-
-.console-content {
-    padding: 20px;
-    height: 100%;
-    overflow-y: auto;
-    font-family: 'Fira Code', monospace;
-    color: var(--accent);
+    font-size: 13px;
 }
 
 /* Правая панель - Чат */
 .chat-panel {
     width: 28%;
+    min-width: 300px;
     background: var(--bg-secondary);
     border-radius: 16px;
     display: flex;
     flex-direction: column;
     border: 2px solid var(--border);
+    overflow: hidden;
 }
 
 .chat-header {
@@ -439,15 +565,16 @@ body {
     font-weight: 700;
     font-size: 1.1rem;
     background: var(--bg-tertiary);
-    border-radius: 16px 16px 0 0;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
 .chat-header::before {
-    content: '-';
+    content: '●';
     color: var(--primary);
+    font-size: 12px;
+    animation: pulse 2s infinite;
 }
 
 .chat-messages {
@@ -457,6 +584,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    min-height: 200px;
 }
 
 .message {
@@ -464,6 +592,19 @@ body {
     border-radius: 14px;
     max-width: 85%;
     line-height: 1.5;
+    word-wrap: break-word;
+    animation: messageAppear 0.3s ease-out;
+}
+
+@keyframes messageAppear {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .message-ai {
@@ -486,7 +627,6 @@ body {
     display: flex;
     gap: 12px;
     background: var(--bg-tertiary);
-    border-radius: 0 0 16px 16px;
 }
 
 .chat-input {
@@ -497,11 +637,192 @@ body {
     border-radius: 8px;
     color: var(--text-primary);
     font-size: 14px;
+    transition: border-color 0.2s ease;
 }
 
 .chat-input:focus {
     outline: none;
     border-color: var(--primary);
+}
+
+.chat-input::placeholder {
+    color: var(--text-secondary);
+}
+
+/* Анимации */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+    .interview-container {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .problem-panel,
+    .editor-panel,
+    .chat-panel {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .progress-container {
+        min-width: 350px;
+    }
+    
+    .header {
+        gap: 20px;
+    }
+    
+    .header-controls {
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .header-controls {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    .progress-container {
+        min-width: auto;
+        width: 100%;
+        flex-direction: column;
+        gap: 10px;
+        padding: 15px;
+    }
+    
+    .progress-bar {
+        width: 100%;
+    }
+    
+    .panel-tabs {
+        flex-direction: column;
+    }
+    
+    .tab {
+        padding: 12px 16px;
+    }
+    
+    .editor-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .language-select {
+        width: 100%;
+    }
+}
+
+/* Стили для модального окна */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(14, 16, 19, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border: 2px solid var(--primary);
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 170, 229, 0.3);
+    animation: modalAppear 0.5s ease-out;
+}
+
+@keyframes modalAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+.modal-content h2 {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    color: var(--primary);
+}
+
+.modal-content p {
+    color: var(--text-secondary);
+    margin-bottom: 25px;
+    font-size: 1.1rem;
+}
+
+.modal-progress {
+    margin: 25px 0;
+}
+
+.modal-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.modal-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    border-radius: 3px;
+    width: 100%;
+    animation: progressShrink 5s linear forwards;
+}
+
+@keyframes progressShrink {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+.modal-countdown {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
 }
 
 /* СТРАНИЦА 3: РЕЗУЛЬТАТЫ */
