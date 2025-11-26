@@ -5,12 +5,6 @@ const languageSelect = document.querySelector('.language-select');
 const codeEditor = document.querySelector('.code-editor');
 const timerDisplay = document.querySelector('.timer');
 
-// Переменные для прогресса задач
-let totalTasks = 4; //???
-let completedTasks = 0;
-let currentTaskProgress = 0;
-let timerInterval;
-
 const languageTemplates = {
     'python': `def solve():
     # Ваше решение здесь
@@ -59,7 +53,6 @@ func solve() {
 document.addEventListener('DOMContentLoaded', () => {
     codeEditor.value = languageTemplates[languageSelect.value];
     startTimer(45 * 60);
-    updateProgressBar(); // Инициализируем прогресс-бар
 });
 
 
@@ -95,104 +88,13 @@ function startTimer(durationInSeconds) {
 
         timerDisplay.textContent = minutes + ":" + seconds;
 
-        // Изменение цвета при малом времени
-        if (timer <= 300) { // 5 минут
-            timerDisplay.style.color = '#EF4444';
-            if (timer <= 60) {
-                timerDisplay.style.animation = 'pulse 1s infinite';
-            }
-        }
-
         if (--timer < 0) {
             clearInterval(interval);
             timerDisplay.textContent = "00:00";
-            // alert("Время собеседования вышло!");
+            alert("Время собеседования вышло!");
             // Вы можете добавить здесь вызов endInterview() или другой логики
-            showTimeUpModal(); // Используем модальное окно вместо alert
         }
     }, 1000);
-}
-
-// Функции прогресса задач
-function updateProgressBar() {
-    const overallProgress = (completedTasks / totalTasks) * 100 + (currentTaskProgress / totalTasks);
-    const progressFill = document.getElementById('progressFill');
-    const progressText = document.getElementById('progressText');
-    
-    if (progressFill && progressText) {
-        progressFill.style.width = Math.min(overallProgress, 100) + '%';
-        progressText.textContent = `${completedTasks}/${totalTasks} задач`;
-        
-        // Меняем цвет прогресс-бара в зависимости от прогресса
-        if (overallProgress >= 75) {
-            progressFill.style.background = 'linear-gradient(90deg, #00E5A8, #00AAE5)';
-        } else if (overallProgress >= 50) {
-            progressFill.style.background = 'linear-gradient(90deg, #F59E0B, #00AAE5)';
-        } else {
-            progressFill.style.background = 'linear-gradient(90deg, #00AAE5, #0090C5)';
-        }
-    }
-}
-
-function completeTask() {
-    completedTasks++;
-    currentTaskProgress = 0;
-    updateProgressBar();
-    
-    addMessage(`Задача ${completedTasks} завершена! Переходим к следующей...`, 'ai');
-    
-    if (completedTasks >= totalTasks) {
-        setTimeout(() => {
-            addMessage('Поздравляю! Вы решили все задачи собеседования.', 'ai');
-            setTimeout(() => {
-                endInterviewSuccess();
-            }, 2000);
-        }, 1000);
-    }
-}
-
-function updateTaskProgress(progress) {
-    currentTaskProgress = progress;
-    updateProgressBar();
-}
-
-function endInterviewSuccess() {
-    clearInterval(timerInterval);
-    alert('Все задачи решены! Переходим к результатам...');
-    window.location.href = 'results';
-}
-
-// Модальное окно окончания времени
-function showTimeUpModal() {
-    const modal = document.getElementById('timeUpModal');
-    if (modal) {
-        modal.style.display = 'flex';
-        
-        let countdown = 5;
-        const countdownElement = document.getElementById('redirectCountdown');
-        
-        const countdownInterval = setInterval(() => {
-            if (countdownElement) {
-                countdownElement.textContent = countdown;
-            }
-            if (countdown-- <= 0) {
-                clearInterval(countdownInterval);
-                redirectToResults();
-            }
-        }, 1000);
-    } else {
-        // Fallback если модальное окно не найдено
-        alert("Время собеседования вышло!");
-        redirectToResults();
-    }
-}
-
-function redirectNow() {
-    redirectToResults();
-}
-
-function redirectToResults() {
-    window.location.href = 'results';
 }
 
 
