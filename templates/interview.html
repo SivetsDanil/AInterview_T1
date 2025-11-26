@@ -21,7 +21,7 @@
                     </div>
                     <div class="timer" id="timer">45:00</div>
                 </div>
-                <button class="btn btn-danger" onclick="endInterview()">Завершить</button>
+                <button class="btn btn-danger" id="endInterviewBtn">Завершить</button>
             </div>
         </header>
 
@@ -40,7 +40,7 @@
                             Пример ввода/вывода будет здесь...
                         </div>
                     </div>
-                    <button class="btn btn-primary run-tests-btn" onclick="runTests()">
+                    <button class="btn btn-primary run-tests-btn" id="runTestsBtn">
                         Запустить тесты
                     </button>
                 </div>
@@ -49,7 +49,7 @@
             <!-- Центральная панель - Редактор -->
             <div class="editor-panel">
                 <div class="editor-header">
-                    <select class="language-select">
+                    <select class="language-select" id="languageSelect">
                         <option value="python">Python</option>
                         <option value="javascript">JavaScript</option>
                         <option value="java">Java</option>
@@ -57,7 +57,7 @@
                     </select>
                 </div>
                 <div class="editor-area">
-                    <textarea class="code-editor" placeholder="// Напишите ваш код здесь...">
+                    <textarea class="code-editor" id="codeEditor" placeholder="// Напишите ваш код здесь...">
 // Пример кода
 function solution() {
     return true;
@@ -80,8 +80,8 @@ function solution() {
                     </div>
                 </div>
                 <div class="chat-input-container">
-                    <input type="text" class="chat-input" placeholder="Введите ваше сообщение...">
-                    <button class="btn btn-primary send-btn" onclick="sendMessage()">Отправить</button>
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Введите ваше сообщение...">
+                    <button class="btn btn-primary send-btn" id="sendBtn">Отправить</button>
                 </div>
             </div>
         </div>
@@ -105,5 +105,6 @@ function solution() {
     <script src="{{ url_for('static', filename='js/interview.js') }}"></script>
 </body>
 </html>
+
 
 
