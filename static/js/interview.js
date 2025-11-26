@@ -1,9 +1,10 @@
 const sendBtn = document.querySelector('.send-btn');
 const runTestsBtn = document.querySelector('.run-tests-btn');
 const messageInput = document.querySelector('.chat-input');
-const languageSelect = document.querySelector('.language-select');
+const languageSelect = document.getElementById('languageDropdown');
 const codeEditor = document.querySelector('.code-editor');
 const timerDisplay = document.querySelector('.timer');
+const editor = document.querySelector('.code-editor');
 
 const languageTemplates = {
     'python': `def solve():
@@ -50,10 +51,6 @@ func solve() {
 };
 
 // Инициализация
-document.addEventListener('DOMContentLoaded', () => {
-    codeEditor.value = languageTemplates[languageSelect.value];
-    startTimer(45 * 60);
-});
 
 
 languageSelect.addEventListener('change', (e) => {
@@ -76,27 +73,6 @@ messageInput.addEventListener('keypress', function (e) {
  * Запускает обратный отсчет таймера
  * @param {number} durationInSeconds - Продолжительность в секундах
  */
-function startTimer(durationInSeconds) {
-    let timer = durationInSeconds;
-    let minutes, seconds;
-
-    const interval = setInterval(() => {
-        minutes = parseInt(timer / 60, 10);
-        seconds = parseInt(timer % 60, 10);
-
-        minutes = minutes < 10 ? "0" + minutes : minutes;
-        seconds = seconds < 10 ? "0" + seconds : seconds;
-
-        timerDisplay.textContent = minutes + ":" + seconds;
-
-        if (--timer < 0) {
-            clearInterval(interval);
-            timerDisplay.textContent = "00:00";
-            // ИЗМЕНЕНИЕ: Замена alert() на безопасный console.warn()
-            console.warn("Время собеседования вышло!"); 
-        }
-    }, 1000);
-}
 
 
 async function sendMessage() {
@@ -235,7 +211,7 @@ function endInterview() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const editor = document.querySelector('.code-editor');
+
     if (!editor) return;
 
     editor.addEventListener('paste', async function (e) {
@@ -298,4 +274,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+
+function startTimer(durationInSeconds) {
+    let timer = durationInSeconds;
+    let minutes, seconds;
+
+    const interval = setInterval(() => {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
+
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        timerDisplay.textContent = minutes + ":" + seconds;
+
+        if (--timer < 0) {
+            clearInterval(interval);
+            timerDisplay.textContent = "00:00";
+            // ИЗМЕНЕНИЕ: Замена alert() на безопасный console.warn()
+            console.warn("Время собеседования вышло!");
+        }
+    }, 1000);
+}
+
+
+
 
