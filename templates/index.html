@@ -10,6 +10,7 @@
     <div class="container">
         <header class="header">
             <div class="logo">SciBox Interview</div>
+            <button class="admin-btn" onclick="goToAdmin()">Я админ</button>
         </header>
 
         <main class="welcome-section">
@@ -18,8 +19,7 @@
                 Полностью автоматизированный процесс с AI-интервьюером
             </p>
 
-            <h2>Выберите направление собеседования</h2>
-            <p class="direction-subtitle">Мы подберем задачи соответствующие вашему выбору</p>
+            <h2>Выберите направление собеседования:</h2>
 
             <div class="direction-grid">
                 <div class="direction-card" onclick="selectDirection(this)">
@@ -76,7 +76,12 @@
             }
             window.location.href = 'interview';
         }
+        
+        function goToAdmin() {
+        window.location.href = "/admin";
+      }
     </script>
 </body>
-
 </html>
+
+

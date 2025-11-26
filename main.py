@@ -152,10 +152,10 @@ def main():
 @app.route('/verify', methods=['POST'])
 def verify_recaptcha():
     """Обрабатывает AJAX-запрос с токеном reCAPTCHA и проверяет его."""
-    
+
     recaptcha_response = request.form.get('g-recaptcha-response')
-    user_message = request.form.get('message') 
-    
+    user_message = request.form.get('message')
+
     if not recaptcha_response:
         return jsonify({'success': False, 'message': 'Токен reCAPTCHA отсутствует'}), 400
 
@@ -163,7 +163,7 @@ def verify_recaptcha():
         'secret': SECRET_KEY_RECAPTCHA,
         'response': recaptcha_response
     }
-    
+
     VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
     try:
         response = requests.post(VERIFY_URL, data=payload)
@@ -172,16 +172,16 @@ def verify_recaptcha():
         return jsonify({'success': False, 'message': f'Ошибка при связи с Google: {e}'}), 500
 
     if result.get('success'):
-        score = result.get('score', 1.0) 
-        
+        score = result.get('score', 1.0)
+
         # Рекомендованный порог для reCAPTCHA v3
         if score >= 0.5:
             # TODO: Здесь вызывайте ваш LLM API (llm.t1v.scibox.tech)
             # Временно используем заглушку
             LLM_RESPONSE = f"Спасибо за ваш вопрос! reCAPTCHA успешно пройдена. Счет - {score}"
-            
+
             return jsonify({
-                'success': True, 
+                'success': True,
                 'score': score,
                 'ai_response': LLM_RESPONSE
             }), 200
