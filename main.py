@@ -50,6 +50,37 @@ def not_found_error(_):
     return render_template('404.html')
 
 
+from flask import request, jsonify
+
+# ... остальной код ...
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    try:
+        data = request.get_json()
+
+
+        #ВОТ СООБЩЕНИЕ ЮЗЕРА
+        user_message = data.get('message', '').strip()
+
+        if not user_message:
+            return jsonify({'error': 'Empty message'}), 400
+
+        #ВОТ ТУТ ФОРМИРУЕТЕ ОТВЕТ
+        bot_reply = f"Умный ответ на твое {user_message}"
+
+
+        return jsonify({
+            'reply': bot_reply,
+            'status': 'success'
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+
 def main():
     app.register_blueprint(IndexAPI.blueprint)
     app.register_blueprint(InterniewAPI.blueprint)

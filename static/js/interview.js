@@ -5,7 +5,6 @@ const languageSelect = document.querySelector('.language-select');
 const codeEditor = document.querySelector('.code-editor');
 const timerDisplay = document.querySelector('.timer');
 
-// Базовые шаблоны кода для разных языков
 const languageTemplates = {
     'python': `def solve():
     # Ваше решение здесь
@@ -47,30 +46,22 @@ import "fmt"
 func solve() {
     // Ваше решение здесь
 }
-
-// func main() {
-//     solve()
-// }
 `,
 };
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
-    // Устанавливаем начальный шаблон и запускаем таймер
     codeEditor.value = languageTemplates[languageSelect.value];
-    startTimer(45 * 60); // 45 минут в секундах
+    startTimer(45 * 60);
 });
 
 
-// Обработчик изменения языка
 languageSelect.addEventListener('change', (e) => {
     const selectedLang = e.target.value;
-    // Устанавливаем соответствующий шаблон
     codeEditor.value = languageTemplates[selectedLang] || '// Выберите язык...';
 });
 
 
-// Обработчики событий, которые были в исходном коде
 sendBtn.addEventListener('click', sendMessage);
 runTestsBtn.addEventListener('click', runTests);
 messageInput.addEventListener('keypress', function (e) {
@@ -107,17 +98,40 @@ function startTimer(durationInSeconds) {
 }
 
 
-function sendMessage() {
+async function sendMessage() {
     const input = document.querySelector('.chat-input');
     const message = input.value.trim();
-    if (message) {
-        addMessage(message, 'user');
-        input.value = '';
 
-        // Заглушка ответа AI
-        setTimeout(() => {
-            addMessage('Спасибо за ваш ответ! Продолжайте работу над задачей.', 'ai');
-        }, 500);
+    if (!message) return;
+
+    // Добавляем сообщение пользователя
+    addMessage(message, 'user');
+    input.value = '';
+
+    // Показываем "печатает..." или заглушку, пока ждём ответ
+    const loadingId = 'loading-' + Date.now();
+
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: message })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.reply) {
+            addMessage(data.reply, 'ai');
+        } else {
+            document.getElementById(loadingId)?.remove();
+            addMessage(`Ошибка: ${data.error || 'Неизвестная ошибка'}`, 'ai');
+        }
+    } catch (error) {
+        document.getElementById(loadingId)?.remove();
+        addMessage(`Не удалось подключиться к серверу`, 'ai');
+        console.error('Ошибка отправки:', error);
     }
 }
 
