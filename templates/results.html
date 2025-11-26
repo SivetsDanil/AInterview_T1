@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SciBox Interview - Результаты</title>
-    <link rel="stylesheet" href="../static/css/styles.css">
+    <link rel="stylesheet" href="../styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -21,11 +22,11 @@
             <div class="results-left">
                 <!-- Общий счет -->
                 <div class="card score-card">
-                    <div class="score-placeholder">
-                        <div class="placeholder-text">Общий балл</div>
-                        <div class="score-main">--/10</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 0%"></div>
+                    <div class="score-chart">
+                        <canvas id="totalScoreChart"></canvas>
+                        <div class="score-overlay">
+                            <div class="score-main" id="totalScoreDisplay">--/10</div>
+                            <div class="score-level" id="skillLevelDisplay">Загрузка...</div>
                         </div>
                     </div>
                 </div>
@@ -33,25 +34,16 @@
                 <!-- График навыков -->
                 <div class="card">
                     <h3>Анализ навыков</h3>
-                    <div class="radar-placeholder">
-                        <div class="placeholder-icon">📊</div>
-                        <div class="placeholder-text">График навыков будет сгенерирован AI</div>
-                        <div class="placeholder-hint">Алгоритмы • Оптимальность • Читаемость • Коммуникация</div>
+                    <div class="chart-container">
+                        <canvas id="skillsRadar"></canvas>
                     </div>
                 </div>
 
                 <!-- Результаты по задачам -->
                 <div class="card">
                     <h3>Результаты по задачам</h3>
-                    <div class="tasks-list">
-                        <div class="task-item placeholder">
-                            <span>Загрузка результатов задач...</span>
-                            <span class="score-placeholder">--/10</span>
-                        </div>
-                        <div class="task-item placeholder">
-                            <span>AI анализирует ваши решения</span>
-                            <span class="score-placeholder">--/10</span>
-                        </div>
+                    <div class="chart-container">
+                        <canvas id="tasksChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -60,20 +52,16 @@
                 <!-- Сильные стороны -->
                 <div class="card">
                     <h3>Сильные стороны</h3>
-                    <ul class="bullet-list placeholder-list">
-                        <li class="placeholder-item">AI определяет ваши сильные стороны</li>
-                        <li class="placeholder-item">На основе качества кода и решений</li>
-                        <li class="placeholder-item">И анализа коммуникации</li>
+                    <ul class="bullet-list" id="strengthsList">
+                        <li>Анализ выполняется...</li>
                     </ul>
                 </div>
 
                 <!-- Рекомендации -->
                 <div class="card">
                     <h3>Рекомендации</h3>
-                    <ul class="bullet-list placeholder-list">
-                        <li class="placeholder-item">Персональные рекомендации по развитию</li>
-                        <li class="placeholder-item">На основе результатов собеседования</li>
-                        <li class="placeholder-item">И выявленных зон роста</li>
+                    <ul class="bullet-list" id="recommendationsList">
+                        <li>Рекомендации формируются...</li>
                     </ul>
                 </div>
             </div>
@@ -86,15 +74,184 @@
     </div>
 
     <script>
+        // ФУНКЦИИ
         function goHome() {
-            window.location.href = 'index';
+            window.location.href = "{{ url_for('index') }}";
         }
-        
+
         function exportResults() {
             alert('Отчет будет доступен после обработки результатов');
         }
+
+       // ДАННЫЕ ДЛЯ ГРАФИКОВ
+const getChartData = () => {
+    // 
+    
+    return {
+        skills: [7, 6, 8, 5, 6],  // 
+        total_score: 6.4,          // 
+        skill_level: "Уровень разработчика", //
+        tasks: [8, 6, 7, 5],       // 
+        strengths: ["Отличное понимание алгоритмов", "Чистый и читаемый код", "Быстрое решение задач"],
+        recommendations: ["Улучшить коммуникационные навыки", "Практиковать оптимизацию кода", "Изучить дополнительные структуры данных"]
+    };
+};
+
+        // ГРАФИКИ
+        document.addEventListener('DOMContentLoaded', function() {
+            const data = getChartData();
+            
+            // Обновляем текстовые элементы
+            document.getElementById('totalScoreDisplay').textContent = data.total_score + '/10';
+            document.getElementById('skillLevelDisplay').textContent = data.skill_level;
+            
+            // Обновляем списки
+            updateList('strengthsList', data.strengths);
+            updateList('recommendationsList', data.recommendations);
+
+            // 1. График общего балла
+            const totalScoreCtx = document.getElementById('totalScoreChart').getContext('2d');
+            const totalScoreChart = new Chart(totalScoreCtx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [data.total_score, 10 - data.total_score],
+                        backgroundColor: ['#00AAE5', '#2D2D2D'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    cutout: '70%',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            enabled: false
+                        }
+                    }
+                }
+            });
+
+            // 2. Радар-чарт навыков
+            const skillsCtx = document.getElementById('skillsRadar').getContext('2d');
+            const skillsChart = new Chart(skillsCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Алгоритмы', 'Оптимальность', 'Читаемость', 'Коммуникация', 'Скорость'],
+                    datasets: [{
+                        label: 'Ваши навыки',
+                        data: data.skills,
+                        backgroundColor: 'rgba(0, 170, 229, 0.2)',
+                        borderColor: '#00AAE5',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#00AAE5',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#00AAE5'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 10,
+                            ticks: { 
+                                stepSize: 2,
+                                color: '#A0A0A0'
+                            },
+                            grid: { 
+                                color: '#2D2D2D' 
+                            },
+                            angleLines: { 
+                                color: '#2D2D2D' 
+                            },
+                            pointLabels: {
+                                color: '#A0A0A0'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#A0A0A0'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 3. Bar chart для задач
+            const tasksCtx = document.getElementById('tasksChart').getContext('2d');
+            const tasksChart = new Chart(tasksCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Задача 1', 'Задача 2', 'Задача 3', 'Задача 4'],
+                    datasets: [{
+                        label: 'Баллы',
+                        data: data.tasks,
+                        backgroundColor: ['#00AAE5', '#00E5A8', '#0090C5', '#00C58E'],
+                        borderColor: '#1A1C20',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10,
+                            grid: { 
+                                color: '#2D2D2D' 
+                            },
+                            ticks: { 
+                                color: '#A0A0A0',
+                                stepSize: 2
+                            },
+                            border: {
+                                color: '#2D2D2D'
+                            }
+                        },
+                        x: {
+                            grid: { 
+                                display: false 
+                            },
+                            ticks: { 
+                                color: '#A0A0A0' 
+                            },
+                            border: {
+                                color: '#2D2D2D'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { 
+                            display: false 
+                        },
+                        tooltip: {
+                            backgroundColor: '#1A1C20',
+                            titleColor: '#FFFFFF',
+                            bodyColor: '#A0A0A0',
+                            borderColor: '#00AAE5',
+                            borderWidth: 1
+                        }
+                    }
+                }
+            });
+        });
+
+        // Функция для обновления списков
+        function updateList(elementId, items) {
+            const list = document.getElementById(elementId);
+            list.innerHTML = '';
+            items.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item;
+                list.appendChild(li);
+            });
+        }
     </script>
 </body>
-
 </html>
-
