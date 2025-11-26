@@ -3,24 +3,39 @@ from flask_login import LoginManager, login_required, logout_user
 import requests
 from dotenv import load_dotenv
 import os
-from api import IndexAPI, InterviewAPI, ResultsAPI
+from api import IndexAPI, InterniewAPI, ResultsAPI
+from api.task_gen import TaskGenerator
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "key"
-load_dotenv()
+# Загружаем переменные окружения из .env файла
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path=env_path)
 SITE_KEY = os.environ.get('SITE_KEY')
 SECRET_KEY_RECAPTCHA = os.environ.get('SECRET_KEY_RECAPTCHA')
 
-
-from api.IndexAPI import blueprint as index_bp
-from api.InterviewAPI import blueprint as interview_bp
-from api.ResultsAPI import blueprint as results_bp
-
-# Регистрация (глобально!)
-app.register_blueprint(index_bp)
-app.register_blueprint(interview_bp)
-app.register_blueprint(results_bp)
-
+# Инициализация TaskGenerator
+task_generator = None
+try:
+    api_key = os.environ.get('OPENAI_API_KEY')
+    base_url = os.environ.get('OPENAI_BASE_URL')
+    if api_key and base_url:
+        task_generator = TaskGenerator(
+            api_key=api_key,
+            base_url=base_url
+        )
+        print("TaskGenerator initialized successfully")
+    else:
+        missing = []
+        if not api_key:
+            missing.append("OPENAI_API_KEY")
+        if not base_url:
+            missing.append("OPENAI_BASE_URL")
+        print(f"Warning: TaskGenerator not initialized - missing: {', '.join(missing)}")
+        print("Please create a .env file with OPENAI_API_KEY and OPENAI_BASE_URL")
+except Exception as e:
+    print(f"Warning: TaskGenerator not initialized: {str(e)}")
+    task_generator = None
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -125,6 +140,15 @@ def handle_code_paste():
         }), 500
 
 
+def main():
+    # Сохраняем TaskGenerator в конфигурации приложения для доступа из blueprint
+    app.config['TASK_GENERATOR'] = task_generator
+    
+    app.register_blueprint(IndexAPI.blueprint)
+    app.register_blueprint(InterniewAPI.blueprint)
+    app.register_blueprint(ResultsAPI.blueprint)
+
+    app.run(port=5000, host='127.0.0.1', debug=True)
 @app.route('/verify', methods=['POST'])
 def verify_recaptcha():
     """Обрабатывает AJAX-запрос с токеном reCAPTCHA и проверяет его."""
@@ -166,11 +190,442 @@ def verify_recaptcha():
     else:
         return jsonify({'success': False, 'message': 'Неудачная верификация', 'errors': result.get('error-codes')}), 403
 
+@app.route('/api/run-tests', methods=['POST'])
+def run_tests_endpoint():
+    """Endpoint для реального выполнения тестов"""
+    import subprocess
+    import tempfile
+    import os
+    import json
+    
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Content-Type must be application/json'}), 400
+        
+        data = request.get_json()
+        task_id = data.get('task_id')
+        user_code = data.get('user_code', '')
+        language = data.get('language', 'python').lower()  # Нормализуем язык к нижнему регистру
+        
+        if not task_id:
+            return jsonify({'error': 'task_id is required'}), 400
+        
+        if not user_code:
+            return jsonify({'error': 'user_code is required'}), 400
+        
+        if task_generator is None:
+            return jsonify({'error': 'TaskGenerator not initialized'}), 500
+        
+        # Получаем задачу из кэша
+        task = task_generator.task_cache.get(task_id)
+        if not task:
+            return jsonify({'error': f'Task {task_id} not found'}), 404
+        
+        test_cases = task.get('test_cases', [])
+        if not test_cases:
+            return jsonify({'error': 'No test cases found'}), 400
+        
+        # Выполняем тесты
+        passed_tests = 0
+        total_tests = len(test_cases)
+        test_results = []
+        
+        for i, test_case in enumerate(test_cases):
+            test_input = test_case.get('input', '')
+            expected_output = str(test_case.get('output', '')).strip()
+            
+            try:
+                # Выполняем код с тестовым вводом
+                if language == 'python':
+                    # Создаем временный файл с кодом пользователя
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as f:
+                        f.write(user_code)
+                        temp_file = f.name
+                    
+                    try:
+                        # Запускаем код с входными данными через stdin
+                        process = subprocess.run(
+                            ['python', temp_file],
+                            input=test_input,
+                            capture_output=True,
+                            text=True,
+                            timeout=5,
+                            encoding='utf-8'
+                        )
+                        
+                        # Получаем вывод
+                        if process.returncode == 0:
+                            actual_output = process.stdout.strip()
+                        else:
+                            # Если была ошибка выполнения, берем stderr
+                            actual_output = process.stderr.strip()
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'error',
+                                'input': test_input,
+                                'expected': expected_output,
+                                'actual': actual_output,
+                                'error': 'Runtime error'
+                            })
+                            continue
+                        
+                        # Сравниваем результаты (игнорируем пробелы в конце)
+                        actual_clean = actual_output.strip()
+                        expected_clean = expected_output.strip()
+                        
+                        if actual_clean == expected_clean:
+                            passed_tests += 1
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'passed',
+                                'input': test_input,
+                                'expected': expected_clean,
+                                'actual': actual_clean
+                            })
+                        else:
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'failed',
+                                'input': test_input,
+                                'expected': expected_clean,
+                                'actual': actual_clean
+                            })
+                    finally:
+                        if os.path.exists(temp_file):
+                            os.unlink(temp_file)
+                elif language == 'go':
+                    # Go требует, чтобы файл был в директории с go.mod или использовался go run
+                    import tempfile as tf
+                    temp_dir = tf.mkdtemp()
+                    try:
+                        go_file = os.path.join(temp_dir, 'main.go')
+                        with open(go_file, 'w', encoding='utf-8') as f:
+                            # Убеждаемся, что код имеет package main
+                            if 'package main' not in user_code:
+                                f.write('package main\n\n')
+                            f.write(user_code)
+                        
+                        # Запускаем код Go с входными данными через stdin
+                        process = subprocess.run(
+                            ['go', 'run', go_file],
+                            input=test_input,
+                            capture_output=True,
+                            text=True,
+                            timeout=10,
+                            encoding='utf-8',
+                            cwd=temp_dir
+                        )
+                        
+                        if process.returncode == 0:
+                            actual_output = process.stdout.strip()
+                        else:
+                            actual_output = process.stderr.strip()
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'error',
+                                'input': test_input,
+                                'expected': expected_output,
+                                'actual': actual_output,
+                                'error': 'Compilation or runtime error'
+                            })
+                            continue
+                        
+                        actual_clean = actual_output.strip()
+                        expected_clean = expected_output.strip()
+                        
+                        if actual_clean == expected_clean:
+                            passed_tests += 1
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'passed',
+                                'input': test_input,
+                                'expected': expected_clean,
+                                'actual': actual_clean
+                            })
+                        else:
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'failed',
+                                'input': test_input,
+                                'expected': expected_clean,
+                                'actual': actual_clean
+                            })
+                    finally:
+                        import shutil
+                        if os.path.exists(temp_dir):
+                            shutil.rmtree(temp_dir, ignore_errors=True)
+                
+                elif language == 'java':
+                    # Создаем временный файл с кодом Java
+                    # Java требует, чтобы имя класса совпадало с именем файла
+                    class_name = 'Solution'
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.java', delete=False, encoding='utf-8') as f:
+                        # Убеждаемся, что класс называется Solution
+                        java_code = user_code
+                        if 'class Solution' not in java_code and 'public class' in java_code:
+                            # Заменяем имя класса на Solution
+                            import re
+                            java_code = re.sub(r'public class \w+', 'public class Solution', java_code)
+                            java_code = re.sub(r'class \w+', 'class Solution', java_code)
+                        f.write(java_code)
+                        temp_file = f.name
+                        temp_dir = os.path.dirname(temp_file)
+                    
+                    try:
+                        # Компилируем Java код
+                        compile_process = subprocess.run(
+                            ['javac', temp_file],
+                            capture_output=True,
+                            text=True,
+                            timeout=5,
+                            encoding='utf-8',
+                            cwd=temp_dir
+                        )
+                        
+                        if compile_process.returncode != 0:
+                            actual_output = compile_process.stderr.strip()
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'error',
+                                'input': test_input,
+                                'expected': expected_output,
+                                'actual': actual_output,
+                                'error': 'Compilation error'
+                            })
+                            continue
+                        
+                        # Запускаем скомпилированный класс
+                        run_process = subprocess.run(
+                            ['java', '-cp', temp_dir, 'Solution'],
+                            input=test_input,
+                            capture_output=True,
+                            text=True,
+                            timeout=5,
+                            encoding='utf-8'
+                        )
+                        
+                        if run_process.returncode == 0:
+                            actual_output = run_process.stdout.strip()
+                        else:
+                            actual_output = run_process.stderr.strip()
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'error',
+                                'input': test_input,
+                                'expected': expected_output,
+                                'actual': actual_output,
+                                'error': 'Runtime error'
+                            })
+                            continue
+                        
+                        actual_clean = actual_output.strip()
+                        expected_clean = expected_output.strip()
+                        
+                        if actual_clean == expected_clean:
+                            passed_tests += 1
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'passed',
+                                'input': test_input,
+                                'expected': expected_clean,
+                                'actual': actual_clean
+                            })
+                        else:
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'failed',
+                                'input': test_input,
+                                'expected': expected_clean,
+                                'actual': actual_clean
+                            })
+                    finally:
+                        # Удаляем скомпилированные файлы
+                        if os.path.exists(temp_file):
+                            os.unlink(temp_file)
+                        class_file = os.path.join(temp_dir, 'Solution.class')
+                        if os.path.exists(class_file):
+                            os.unlink(class_file)
+                
+                elif language == 'cpp' or language == 'c++':
+                    # Создаем временный файл с кодом C++
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.cpp', delete=False, encoding='utf-8') as f:
+                        f.write(user_code)
+                        temp_file = f.name
+                        temp_dir = os.path.dirname(temp_file)
+                        exe_file = os.path.join(temp_dir, 'solution.exe' if os.name == 'nt' else 'solution')
+                    
+                    try:
+                        # Компилируем C++ код
+                        compile_process = subprocess.run(
+                            ['g++', '-o', exe_file, temp_file],
+                            capture_output=True,
+                            text=True,
+                            timeout=10,
+                            encoding='utf-8'
+                        )
+                        
+                        if compile_process.returncode != 0:
+                            actual_output = compile_process.stderr.strip()
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'error',
+                                'input': test_input,
+                                'expected': expected_output,
+                                'actual': actual_output,
+                                'error': 'Compilation error'
+                            })
+                            continue
+                        
+                        # Запускаем скомпилированную программу
+                        run_process = subprocess.run(
+                            [exe_file],
+                            input=test_input,
+                            capture_output=True,
+                            text=True,
+                            timeout=5,
+                            encoding='utf-8'
+                        )
+                        
+                        if run_process.returncode == 0:
+                            actual_output = run_process.stdout.strip()
+                        else:
+                            actual_output = run_process.stderr.strip()
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'error',
+                                'input': test_input,
+                                'expected': expected_output,
+                                'actual': actual_output,
+                                'error': 'Runtime error'
+                            })
+                            continue
+                        
+                        actual_clean = actual_output.strip()
+                        expected_clean = expected_output.strip()
+                        
+                        if actual_clean == expected_clean:
+                            passed_tests += 1
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'passed',
+                                'input': test_input,
+                                'expected': expected_clean,
+                                'actual': actual_clean
+                            })
+                        else:
+                            test_results.append({
+                                'test': i + 1,
+                                'status': 'failed',
+                                'input': test_input,
+                                'expected': expected_clean,
+                                'actual': actual_clean
+                            })
+                    finally:
+                        # Удаляем временные файлы
+                        if os.path.exists(temp_file):
+                            os.unlink(temp_file)
+                        if os.path.exists(exe_file):
+                            os.unlink(exe_file)
+                
+                else:
+                    # Для других языков возвращаем ошибку
+                    return jsonify({
+                        'error': f'Language {language} is not supported for test execution yet'
+                    }), 400
+                    
+            except subprocess.TimeoutExpired:
+                test_results.append({
+                    'test': i + 1,
+                    'status': 'timeout',
+                    'input': test_input,
+                    'error': 'Execution timeout'
+                })
+            except Exception as e:
+                test_results.append({
+                    'test': i + 1,
+                    'status': 'error',
+                    'input': test_input,
+                    'error': str(e)
+                })
+        
+        all_passed = passed_tests == total_tests
+        
+        return jsonify({
+            'status': 'success',
+            'passed': passed_tests,
+            'total': total_tests,
+            'all_passed': all_passed,
+            'test_results': test_results
+        }), 200
+        
+    except Exception as e:
+        error_msg = f"Ошибка при выполнении тестов: {str(e)}"
+        print(f"❌ Ошибка в /api/run-tests: {error_msg}")
+        return jsonify({
+            'status': 'error',
+            'message': error_msg
+        }), 500
 
-def main():
-    app.run(port=5000, host='127.0.0.1', debug=True)
-
-
+@app.route('/main', methods=['POST'])
+def review_code_endpoint():
+    """Endpoint для обработки запроса на ревью кода"""
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Content-Type must be application/json'}), 400
+        
+        data = request.get_json()
+        task_id = data.get('task_id')
+        user_code = data.get('user_code', '')
+        language = data.get('language', 'python')
+        
+        if not task_id:
+            return jsonify({'error': 'task_id is required'}), 400
+        
+        if not user_code:
+            return jsonify({'error': 'user_code is required'}), 400
+        
+        if task_generator is None:
+            error_msg = (
+                'TaskGenerator not initialized. Please set OPENAI_API_KEY and OPENAI_BASE_URL '
+                'in your .env file or environment variables.'
+            )
+            print(f"ERROR: {error_msg}")
+            return jsonify({
+                'error': error_msg,
+                'details': 'Check that OPENAI_API_KEY and OPENAI_BASE_URL are set in .env file'
+            }), 500
+        
+        # Вызываем метод review_code класса TaskGenerator
+        result = task_generator.review_code(
+            task_id=task_id,
+            user_code=user_code,
+            language=language
+        )
+        
+        # Выводим результат в консоль PyCharm
+        print("=" * 80)
+        print("РЕЗУЛЬТАТ РЕВЬЮ КОДА:")
+        print("=" * 80)
+        print(f"Task ID: {task_id}")
+        print(f"Language: {language}")
+        print(f"User Code:\n{user_code}")
+        print("\nReview Result:")
+        import json
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        print("=" * 80)
+        
+        return jsonify({
+            'status': 'success',
+            'result': result
+        }), 200
+        
+    except Exception as e:
+        error_msg = f"Ошибка при обработке запроса: {str(e)}"
+        print(f"❌ Ошибка в /main: {error_msg}")
+        return jsonify({
+            'status': 'error',
+            'message': error_msg
+        }), 500
 
 if __name__ == '__main__':
     main()
