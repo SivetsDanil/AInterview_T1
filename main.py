@@ -90,7 +90,7 @@ def verify_recaptcha():
         if score >= 0.5:
             # TODO: Здесь вызывайте ваш LLM API (llm.t1v.scibox.tech)
             # Временно используем заглушку
-            LLM_RESPONSE = "Спасибо за ваш вопрос! reCAPTCHA успешно пройдена. Ваше сообщение: " + user_message 
+            LLM_RESPONSE = f"Спасибо за ваш вопрос! reCAPTCHA успешно пройдена. Счет - {score}"
             
             return jsonify({
                 'success': True, 

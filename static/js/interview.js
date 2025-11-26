@@ -71,9 +71,10 @@ languageSelect.addEventListener('change', (e) => {
 
 
 // Обработчики событий, которые были в исходном коде
-sendBtn.addEventListener('click', sendMessage);
-runTestsBtn.addEventListener('click', runTests);
-messageInput.addEventListener('keypress', function (e) {
+// Убедитесь, что все эти элементы существуют в DOM
+if (sendBtn) sendBtn.addEventListener('click', sendMessage);
+if (runTestsBtn) runTestsBtn.addEventListener('click', runTests);
+if (messageInput) messageInput.addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
         sendMessage();
     }
@@ -100,8 +101,8 @@ function startTimer(durationInSeconds) {
         if (--timer < 0) {
             clearInterval(interval);
             timerDisplay.textContent = "00:00";
-            alert("Время собеседования вышло!");
-            // Вы можете добавить здесь вызов endInterview() или другой логики
+            // ИЗМЕНЕНИЕ: Замена alert() на безопасный console.warn()
+            console.warn("Время собеседования вышло!"); 
         }
     }, 1000);
 }
@@ -117,12 +118,17 @@ function sendMessage() {
     
     // 1. Сначала вызываем reCAPTCHA API, чтобы получить токен
     grecaptcha.ready(function() {
-        // !!! ЗАМЕНИТЬ НА ВАШ ПУБЛИЧНЫЙ КЛЮЧ !!!
-        const SITE_KEY_JS = 'ВАШ_ПУБЛИЧНЫЙ_КЛЮЧ_RECAPTCHA'; 
+        // !!! ВАШ ПУБЛИЧНЫЙ КЛЮЧ RECAPTCHA ДОЛЖЕН БЫТЬ ЗДЕСЬ !!!
+        // Убедитесь, что это "Ключ сайта" (Site Key), зарегистрированный для localhost.
+        const SITE_KEY_JS ="6LeNDRksAAAAAFpfLym3unGOmDpGMqTZybb_6QA1"; 
 
         grecaptcha.execute(SITE_KEY_JS, {action: 'submit'}).then(function(token) {
             // 2. Получив токен, отправляем его вместе с сообщением на наш сервер
             sendVerificationRequest(message, token);
+        }).catch(error => {
+            // ДОБАВЛЕНО: Обработка ошибки, если grecaptcha.execute не сработала
+            console.error("Ошибка при выполнении grecaptcha.execute:", error);
+            addMessage('Ошибка: не удалось получить токен reCAPTCHA. Проверьте Консоль (F12).', 'ai');
         });
     });
 }
@@ -148,7 +154,20 @@ function sendVerificationRequest(message, token) {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        // УЛУЧШЕНИЕ: Обработка HTTP-статуса для лучшей отладки
+        if (!response.ok) {
+            // Если статус 4xx или 5xx, пытаемся получить JSON с ошибкой от Flask
+            return response.json().then(errorData => {
+                // Если Flask отправил JSON с сообщением об ошибке
+                throw new Error(errorData.message || `HTTP Error! Status: ${response.status}.`);
+            }).catch(() => {
+                // Если Flask не отправил JSON (например, при серьезной 500 ошибке)
+                throw new Error(`HTTP Error! Status: ${response.status}. Проверьте логи сервера.`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // Верификация успешна, добавляем ответ AI
@@ -166,9 +185,9 @@ function sendVerificationRequest(message, token) {
         }
     })
     .catch(error => {
-        // Ошибка сети
+        // Ошибка сети или ошибка, вызванная throw new Error в предыдущем блоке
         setTimeout(() => {
-            addMessage('Произошла ошибка сети. Не удалось связаться с сервером.', 'ai');
+            addMessage(`Произошла ошибка сети/сервера: ${error.message}`, 'ai');
         }, 500);
         console.error('Ошибка Fetch:', error);
     });
@@ -190,8 +209,8 @@ function runTests() {
 }
 
 function endInterview() {
-    if (confirm('Завершить собеседование?')) {
-        // Замените на реальный URL
-        window.location.href = 'results'; 
-    }
+    // ИЗМЕНЕНИЕ: Замена confirm() на console.log()
+    console.warn('Завершение собеседования подтверждено. Перенаправление на страницу результатов.');
+    // В реальном приложении здесь будет логика отображения модального окна
+    window.location.href = 'results'; 
 }
