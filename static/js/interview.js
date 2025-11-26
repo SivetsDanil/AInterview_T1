@@ -163,8 +163,7 @@ function sendVerificationRequest(message, token) {
     const messageInput = document.querySelector('.chat-input');
 
     // Показываем сообщение пользователя сразу, пока ждем ответа
-    addMessage(message, 'user');
-    messageInput.value = ''; 
+    messageInput.value = '';
     
     const formData = new FormData();
     formData.append('message', message);
