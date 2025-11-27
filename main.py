@@ -1,8 +1,12 @@
-from flask import Flask, render_template, redirect, request, jsonify
+from flask import Flask, render_template, redirect, request, jsonify, session
 from flask_login import LoginManager, login_required, logout_user
 import requests
 from dotenv import load_dotenv
 import os
+from datetime import datetime, timezone
+from flask_sqlalchemy import SQLAlchemy
+import json
+from ai_interviewer import setup_scibox, interview_step
 from api import IndexAPI, InterviewAPI, ResultsAPI
 from task_gen import TaskGenerator
 
@@ -13,6 +17,39 @@ env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path=env_path)
 SITE_KEY = os.environ.get('SITE_KEY')
 SECRET_KEY_RECAPTCHA = os.environ.get('SECRET_KEY_RECAPTCHA')
+
+# Настраиваем БД для сохранения интервью
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'interviews.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
+db = SQLAlchemy(app)
+
+# Инициализация SciBox
+SCIBOX_API_KEY = os.getenv("SCIBOX_API_KEY", "sk-gqlpOmmxNrBvLyv766GXYg")
+try:
+    setup_scibox(SCIBOX_API_KEY)
+    print("✅ SciBox инициализирован")
+except Exception as e:
+    print(f"❌ ОШИБКА инициализации SciBox: {e}")
+
+
+class Interview(db.Model):
+    __tablename__ = 'interviews'
+
+    id = db.Column(db.Integer, primary_key=True)
+    direction = db.Column(db.String(100), nullable=False)
+    fio = db.Column(db.String(100), nullable=False)
+    questionnaire = db.Column(db.Text, nullable=True)
+    started_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    session_id = db.Column(db.String(128), nullable=True)
+
+    def __repr__(self):
+        return f"<Interview {self.id}: {self.fio} — {self.direction}>"
+
+
+with app.app_context():
+    db.create_all()
+
 
 # Инициализация TaskGenerator
 task_generator = None
@@ -91,17 +128,30 @@ def chat():
 
         # ВОТ СООБЩЕНИЕ ЮЗЕРА
         user_message = data.get('message', '').strip()
+        topic = data.get('topic', 'общая разработка').strip()
 
         if not user_message:
             return jsonify({'error': 'Empty message'}), 400
 
-        # ВОТ ТУТ ФОРМИРУЕТЕ ОТВЕТ
-        bot_reply = f"Умный ответ на твое {user_message}"
+        bot_reply = None
+        evaluation = None
+        try:
+            bot_reply, evaluation = interview_step(topic, user_message)
+            bot_reply = bot_reply.replace('<think>\n\n</think>\n\n', '')
+        except Exception as e:
+            print(f"❌ Ошибка interview_step: {e}")
 
-        return jsonify({
+        if not bot_reply:
+            bot_reply = f"Умный ответ на твое {user_message}"
+
+        response = {
             'reply': bot_reply,
             'status': 'success'
-        })
+        }
+        if evaluation is not None:
+            response['evaluation'] = evaluation
+
+        return jsonify(response)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -637,6 +687,65 @@ def review_code_endpoint():
             'status': 'error',
             'message': error_msg
         }), 500
+
+
+@app.route('/api/start', methods=['POST'])
+def start_interview():
+    data = request.get_json()
+    direction = data.get('direction')
+
+    if not direction:
+        return jsonify({'error': 'Направление не указано'}), 400
+
+    session['direction'] = direction
+    session['started_at'] = datetime.now().isoformat()
+    return jsonify({'success': True})
+
+
+@app.route('/api/save-fio', methods=['POST'])
+def save_fio():
+    data = request.get_json()
+    fio = data.get('fio')
+
+    if not fio or len(fio) > 100:
+        return jsonify({'success': False, 'error': 'Некорректное ФИО'}), 400
+
+    direction = session.get('direction')
+    started_at_str = session.get('started_at')
+
+    if not direction:
+        return jsonify({'success': False, 'error': 'Направление не найдено в сессии'}), 400
+
+    try:
+        started_at = datetime.fromisoformat(started_at_str)
+    except (TypeError, ValueError):
+        started_at = datetime.now(timezone.utc)
+
+    interview = Interview(
+        direction=direction,
+        fio=fio,
+        questionnaire=json.dumps({}),
+        started_at=started_at,
+        session_id=getattr(session, 'sid', None)
+    )
+
+    try:
+        db.session.add(interview)
+        db.session.commit()
+        session['interview_id'] = interview.id
+        session['fio'] = fio
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Ошибка сохранения в БД', 'details': str(e)}), 500
+
+
+def init_db():
+    with app.app_context():
+        db.create_all()
+
+
+init_db()
 
 
 if __name__ == '__main__':
