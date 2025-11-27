@@ -147,23 +147,34 @@
       }
 
       function saveFIO() {
-        const fioInput = document.getElementById("fioInput");
-        const fio = fioInput.value.trim();
+    const fio = document.getElementById("fioInput").value.trim();
+    if (!fio) {
+        alert("Введите ФИО");
+        return;
+    }
 
-        if (fio === "") {
-          alert("Пожалуйста, введите ваше ФИО");
-          return;
+    // Отправляем на сервер
+    fetch('/api/save-fio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fio: fio })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Скрываем модалку
+            document.getElementById("fioModal").style.display = "none";
+            // Опционально: обновляем интерфейс
+            document.querySelector('.results-header h1').textContent = `Результаты: ${fio}`;
+        } else {
+            alert('Ошибка сохранения');
         }
-
-        // Сохраняем ФИО в localStorage
-        localStorage.setItem("userFIO", fio);
-
-        // Скрываем модальное окно
-        document.getElementById("fioModal").style.display = "none";
-
-        // Здесь можно добавить логику использования ФИО, если нужно
-        console.log("Сохраненное ФИО:", fio);
-      }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Не удалось сохранить данные');
+    });
+}
 
       function goHome() {
         window.location.href = "/";

@@ -68,15 +68,25 @@
             // Активируем кнопку
             document.getElementById('start-btn').disabled = false;
         }
-        
         function startInterview() {
             if (!selectedDirection) {
-                alert('Пожалуйста, выберите направление собеседования');
+                alert('Выберите направление');
                 return;
             }
-            window.location.href = 'interview';
+            // Отправляем направление на сервер
+            fetch('/api/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ direction: selectedDirection })
+            })
+            .then(() => {
+                window.location.href = '/interview';
+            })
+            .catch(err => {
+                console.error('Ошибка:', err);
+                alert('Не удалось начать собеседование');
+            });
         }
-        
         function goToAdmin() {
         window.location.href = "/admin";
       }
