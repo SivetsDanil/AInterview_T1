@@ -7,6 +7,25 @@
     <link rel="stylesheet" href="../static/css/styles.css" />
   </head>
   <body>
+    <!-- Модальное окно для ввода ФИО -->
+    <div id="fioModal" class="modal">
+      <div class="modal-content">
+        <h3>Введите ваши данные</h3>
+        <p>Для отображения результатов введите ваше ФИО</p>
+        <input
+          type="text"
+          id="fioInput"
+          placeholder="Иванов Иван Иванович"
+          maxlength="100"
+        />
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="saveFIO()">
+            Продолжить
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="container">
       <header class="header">
         <div class="logo">SciBox Interview</div>
@@ -99,6 +118,64 @@
     </div>
 
     <script>
+      // Показываем модальное окно при загрузке страницы
+      document.addEventListener("DOMContentLoaded", function () {
+        // Проверяем, не вводил ли пользователь ФИО ранее
+        const savedFIO = localStorage.getItem("userFIO");
+        if (!savedFIO) {
+          showFIOModal();
+        } else {
+          // Если ФИО уже сохранено, можно использовать его при необходимости
+          console.log("ФИО пользователя:", savedFIO);
+        }
+      });
+
+      function showFIOModal() {
+        const modal = document.getElementById("fioModal");
+        modal.style.display = "flex";
+
+        // Фокус на поле ввода
+        const fioInput = document.getElementById("fioInput");
+        fioInput.focus();
+
+        // Обработка нажатия Enter
+        fioInput.addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            saveFIO();
+          }
+        });
+      }
+
+      function saveFIO() {
+    const fio = document.getElementById("fioInput").value.trim();
+    if (!fio) {
+        alert("Введите ФИО");
+        return;
+    }
+
+    // Отправляем на сервер
+    fetch('/api/save-fio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fio: fio })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Скрываем модалку
+            document.getElementById("fioModal").style.display = "none";
+            // Опционально: обновляем интерфейс
+            document.querySelector('.results-header h1').textContent = `Результаты: ${fio}`;
+        } else {
+            alert('Ошибка сохранения');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Не удалось сохранить данные');
+    });
+}
+
       function goHome() {
         window.location.href = "/";
       }
@@ -109,5 +186,3 @@
     </script>
   </body>
 </html>
-
-

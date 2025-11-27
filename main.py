@@ -1,9 +1,12 @@
 from flask import Flask, render_template, redirect,request,jsonify
 from flask_login import LoginManager, login_required, logout_user
+from flask import request, session, jsonify
 import requests
 from dotenv import load_dotenv
 import os
-from api import IndexAPI, InterviewAPI, ResultsAPI
+from datetime import datetime, timezone
+from flask_sqlalchemy import SQLAlchemy
+import json
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "key"
@@ -24,6 +27,36 @@ app.register_blueprint(results_bp)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'interviews.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
+
+
+db = SQLAlchemy(app)
+
+
+# Модель записи интервью
+class Interview(db.Model):
+    __tablename__ = 'interviews'
+
+    id = db.Column(db.Integer, primary_key=True)
+    direction = db.Column(db.String(100), nullable=False)
+    fio = db.Column(db.String(100), nullable=False)
+    questionnaire = db.Column(db.Text, nullable=True)  # JSON-строка или NULL
+    started_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    session_id = db.Column(db.String(128), nullable=True)  # можно для отладки
+
+    def __repr__(self):
+        return f"<Interview {self.id}: {self.fio} — {self.direction}>"
+
+# Создаём таблицы (вызов один раз при первом запуске)
+with app.app_context():
+    db.create_all()
+
+
 
 
 
@@ -167,10 +200,75 @@ def verify_recaptcha():
         return jsonify({'success': False, 'message': 'Неудачная верификация', 'errors': result.get('error-codes')}), 403
 
 
+@app.route('/api/start', methods=['POST'])
+def start_interview():
+    data = request.get_json()
+    direction = data.get('direction')
+
+    if not direction:
+        return jsonify({'error': 'Направление не указано'}), 400
+
+    # Сохраняем в сессии
+    session['direction'] = direction
+    session['started_at'] = datetime.now().isoformat()
+    return jsonify({'success': True})
+
+
+@app.route('/api/save-fio', methods=['POST'])
+def save_fio():
+    data = request.get_json()
+    fio = data.get('fio')
+
+    if not fio or len(fio) > 100:
+        return jsonify({'success': False, 'error': 'Некорректное ФИО'}), 400
+
+    direction = session.get('direction')
+    started_at_str = session.get('started_at')
+
+    if not direction:
+        return jsonify({'success': False, 'error': 'Направление не найдено в сессии'}), 400
+
+    # Парсим started_at (если нужно — но можно и не брать из сессии, а писать прямо в БД)
+    try:
+        started_at = datetime.fromisoformat(started_at_str)
+    except (TypeError, ValueError):
+        started_at = datetime.now(timezone.utc)
+
+    # Создаём запись в БД
+    interview = Interview(
+        direction=direction,
+        fio=fio,
+        questionnaire=json.dumps({}),  # 🔹 ЗАГЛУШКА: пустая анкета как JSON
+        started_at=started_at,
+        session_id=session.sid if hasattr(session, 'sid') else None
+    )
+
+    try:
+        db.session.add(interview)
+        db.session.commit()
+        session['interview_id'] = interview.id  # сохраняем ID в сессию на будущее
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': 'Ошибка сохранения в БД', 'details': str(e)}), 500
+
+    session['fio'] = fio
+    return jsonify({'success': True})
+
+
+def init_db():
+    with app.app_context():
+        if 'interviews' not in db.metadata.tables:
+            print("⚠️  Таблица 'interviews' не найдена в метаданных — возможно, модель не импортирована")
+        db.create_all()
+init_db()
+
 def main():
     app.run(port=5000, host='127.0.0.1', debug=True)
 
 
-
 if __name__ == '__main__':
-    main()
+    with app.app_context():
+        db.create_all()
+        db_path = os.path.abspath(app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', ''))
+
+    app.run(port=5000, host='127.0.0.1', debug=True)
