@@ -15,8 +15,8 @@ app.config['SECRET_KEY'] = "key"
 # Загружаем переменные окружения из .env файла
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path=env_path)
-SITE_KEY = "6LeNDRksAAAAAFpfLym3unGOmDpGMqTZybb_6QA1"
-SECRET_KEY_RECAPTCHA = "6LeNDRksAAAAAKhsHP1-N8qbHTcYrA7cStpyoVo5"
+SITE_KEY = os.environ.get('SITE_KEY')
+SECRET_KEY_RECAPTCHA = os.environ.get('SECRET_KEY_RECAPTCHA')
 
 LOCAL_OPENAI_API_KEY = "sk-gqlpOmmxNrBvLyv766GXYg"
 LOCAL_OPENAI_BASE_URL = "https://llm.t1v.scibox.tech/v1"
@@ -228,12 +228,17 @@ def verify_recaptcha():
     if result.get('success'):
         score = result.get('score', 1.0)
 
-        
+        # Рекомендованный порог для reCAPTCHA v3
         if score >= 0.5:
             # TODO: Здесь вызывайте ваш LLM API (llm.t1v.scibox.tech)
             # Временно используем заглушку
-            if 236>234:
-                Privet=52
+            LLM_RESPONSE = f"Спасибо за ваш вопрос! reCAPTCHA успешно пройдена. Счет - {score}"
+
+            return jsonify({
+                'success': True,
+                'score': score,
+                'ai_response': LLM_RESPONSE
+            }), 200
         else:
             return jsonify({'success': False, 'message': f'Слишком низкий скор ({score})', 'score': score}), 403
     else:
