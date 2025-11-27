@@ -1,5 +1,10 @@
-// Элементы будут получены после загрузки DOM
-let sendBtn, runTestsBtn, messageInput, languageSelect, codeEditor, timerDisplay;
+const sendBtn = document.querySelector('.send-btn');
+const runTestsBtn = document.querySelector('.run-tests-btn');
+const messageInput = document.querySelector('.chat-input');
+const languageSelect = document.getElementById('languageDropdown');
+const codeEditor = document.querySelector('.code-editor');
+const timerDisplay = document.querySelector('.timer');
+const editor = document.querySelector('.code-editor');
 
 const languageTemplates = {
     'python': `def solve():
@@ -46,76 +51,20 @@ func solve() {
 };
 
 // Инициализация
-document.addEventListener('DOMContentLoaded', () => {
-    // Получаем элементы после загрузки DOM
-    sendBtn = document.querySelector('.send-btn');
-    runTestsBtn = document.querySelector('.run-tests-btn');
-    messageInput = document.querySelector('.chat-input');
-    languageSelect = document.querySelector('.language-select');
-    codeEditor = document.querySelector('.code-editor');
-    timerDisplay = document.querySelector('.timer');
-    
-    // Инициализируем редактор
-    if (codeEditor && languageSelect) {
-        const selectedLang = languageSelect.value || 'python';
-        if (languageTemplates[selectedLang]) {
-            codeEditor.value = languageTemplates[selectedLang];
-        }
-    }
-    
-    // Обработчик смены языка
-    if (languageSelect) {
-        languageSelect.addEventListener('change', (e) => {
-            const selectedLang = e.target.value;
-            if (codeEditor && languageTemplates[selectedLang]) {
-                const currentCode = codeEditor.value.trim();
-                
-                // Проверяем, является ли текущий код шаблоном
-                let isTemplate = false;
-                for (const [lang, template] of Object.entries(languageTemplates)) {
-                    const templateTrimmed = template.trim();
-                    if (currentCode === templateTrimmed) {
-                        isTemplate = true;
-                        break;
-                    }
-                }
-                
-                // Если код пустой или это шаблон, заменяем на новый шаблон
-                if (currentCode === '' || isTemplate) {
-                    codeEditor.value = languageTemplates[selectedLang];
-                }
-                // Иначе оставляем код пользователя
-            }
-        });
-    }
-    
-    // Обработчик кнопки отправки сообщения
-    if (sendBtn) {
-        sendBtn.addEventListener('click', sendMessage);
-    }
-    
-    // Обработчик кнопки запуска тестов
-    if (runTestsBtn) {
-        runTestsBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (window.runTests) {
-                window.runTests();
-            }
-        });
-    }
-    
-    // Обработчик Enter в поле сообщения
-    if (messageInput) {
-        messageInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-    }
-    
-    // Запускаем таймер
-    if (timerDisplay) {
-        startTimer(45 * 60);
+
+
+languageSelect.addEventListener('change', (e) => {
+    const selectedLang = e.target.value;
+    codeEditor.value = languageTemplates[selectedLang] || '// Выберите язык...';
+});
+
+
+
+sendBtn.addEventListener('click', sendMessage);
+runTestsBtn.addEventListener('click', runTests);
+messageInput.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        sendMessage();
     }
 });
 
@@ -124,27 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
  * Запускает обратный отсчет таймера
  * @param {number} durationInSeconds - Продолжительность в секундах
  */
-function startTimer(durationInSeconds) {
-    let timer = durationInSeconds;
-    let minutes, seconds;
-
-    const interval = setInterval(() => {
-        minutes = parseInt(timer / 60, 10);
-        seconds = parseInt(timer % 60, 10);
-
-        minutes = minutes < 10 ? "0" + minutes : minutes;
-        seconds = seconds < 10 ? "0" + seconds : seconds;
-
-        timerDisplay.textContent = minutes + ":" + seconds;
-
-        if (--timer < 0) {
-            clearInterval(interval);
-            timerDisplay.textContent = "00:00";
-            // ИЗМЕНЕНИЕ: Замена alert() на безопасный console.warn()
-            console.warn("Время собеседования вышло!"); 
-        }
-    }, 1000);
-}
 
 
 async function sendMessage() {
@@ -166,7 +94,10 @@ async function sendMessage() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ message: message })
+            body: JSON.stringify({
+                message: message,
+                topic: "IT"  // ← вот эта строка критична!
+              })
         });
 
         const data = await response.json();
@@ -269,208 +200,9 @@ function addMessage(text, sender) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// Делаем функцию глобальной для доступа из onclick
-window.runTests = async function runTests() {
-    console.log('runTests вызвана');
-    const consoleContent = document.querySelector('.console-content') || document.getElementById('consoleOutput');
-    const codeEditor = document.querySelector('.code-editor');
-    const languageSelect = document.querySelector('.language-select');
-    
-    if (!consoleContent) {
-        console.error('Не найден элемент .console-content или #consoleOutput');
-        return;
-    }
-    
-    // Получаем код из редактора
-    const userCode = codeEditor ? codeEditor.value.trim() : '';
-    const language = languageSelect ? languageSelect.value : 'python';
-    
-    // Получаем task_id (можно из data-атрибута кнопки или из глобальной переменной)
-    const taskId = document.querySelector('.run-tests-btn')?.dataset.taskId || 
-                   window.currentTaskId || 
-                   'default_task_id';
-    
-    console.log('Task ID:', taskId, 'Language:', language, 'Code length:', userCode.length);
-    
-    if (!userCode) {
-        consoleContent.innerHTML = '> ❌ Ошибка: Код не может быть пустым';
-        return;
-    }
-    
-    // Показываем, что запрос отправляется
-    consoleContent.innerHTML = '> Тесты запущены...\n> Выполнение кода...';
-    
-    try {
-        console.log('Отправка запроса на /api/run-tests');
-        // Сначала выполняем реальные тесты
-        const testResponse = await fetch('/api/run-tests', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                task_id: taskId,
-                user_code: userCode,
-                language: language
-            })
-        });
-        
-        console.log('Ответ получен, статус:', testResponse.status);
-        const testData = await testResponse.json();
-        console.log('Данные ответа:', testData);
-        
-        if (testResponse.ok && testData.status === 'success') {
-            const passed = testData.passed;
-            const total = testData.total;
-            const allPassed = testData.all_passed;
-            const testResults = testData.test_results || [];
-            
-            let output = `> Результаты тестов: ${passed}/${total} пройдено\n\n`;
-            
-            // Показываем результаты каждого теста
-            testResults.forEach(test => {
-                if (test.status === 'passed') {
-                    output += `> ✓ Тест ${test.test}: ПРОЙДЕН\n`;
-                } else if (test.status === 'failed') {
-                    output += `> ✗ Тест ${test.test}: НЕ ПРОЙДЕН\n`;
-                    output += `>   Ввод: ${test.input}\n`;
-                    output += `>   Ожидалось: ${test.expected}\n`;
-                    output += `>   Получено: ${test.actual}\n\n`;
-                } else if (test.status === 'error') {
-                    output += `> ✗ Тест ${test.test}: ОШИБКА\n`;
-                    output += `>   ${test.error}\n\n`;
-                } else if (test.status === 'timeout') {
-                    output += `> ✗ Тест ${test.test}: ТАЙМАУТ\n\n`;
-                }
-            });
-            
-            if (allPassed) {
-                output += '\n> 🎉 Все тесты пройдены! Задача решена.\n';
-                consoleContent.innerHTML = output;
-                
-                // Генерируем новую задачу и очищаем редактор
-                await loadNewTask();
-            } else {
-                output += `\n> ❌ Не все тесты пройдены. Продолжайте работу.\n`;
-                consoleContent.innerHTML = output;
-            }
-        } else {
-            let errorMsg = testData.message || testData.error || 'Ошибка выполнения тестов';
-            consoleContent.innerHTML = `> ❌ Ошибка: ${errorMsg}`;
-        }
-    } catch (error) {
-        consoleContent.innerHTML = `> ❌ Ошибка сети: ${error.message}`;
-        console.error('Ошибка при отправке запроса:', error);
-    }
-};
-
-async function loadNewTask() {
-    const codeEditor = document.querySelector('.code-editor');
-    const languageSelect = document.querySelector('.language-select');
+function runTests() {
     const consoleContent = document.querySelector('.console-content');
-    
-    try {
-        // Очищаем редактор и устанавливаем шаблон для текущего языка
-        if (codeEditor && languageSelect) {
-            const selectedLang = languageSelect.value;
-            codeEditor.value = languageTemplates[selectedLang] || '';
-        }
-        
-        // Генерируем новую задачу
-        const response = await fetch('/api/generate-task', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                position: 'Python Developer',
-                difficulty: 'middle'
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok && data.status === 'success') {
-            const newTask = data.task;
-            
-            // Обновляем task_id
-            window.currentTaskId = newTask.id;
-            const runTestsBtn = document.querySelector('.run-tests-btn');
-            if (runTestsBtn) {
-                runTestsBtn.dataset.taskId = newTask.id;
-            }
-            
-            // Обновляем содержимое задачи на странице
-            updateTaskDisplay(newTask);
-            
-            consoleContent.innerHTML += '\n> Новая задача загружена!';
-        } else {
-            consoleContent.innerHTML += `\n> ⚠️ Не удалось загрузить новую задачу: ${data.error || 'Неизвестная ошибка'}`;
-        }
-    } catch (error) {
-        console.error('Ошибка при загрузке новой задачи:', error);
-        consoleContent.innerHTML += `\n> ⚠️ Ошибка при загрузке новой задачи: ${error.message}`;
-    }
-}
-
-function updateTaskDisplay(task) {
-    // Обновляем вкладку "Задача"
-    const taskTab = document.getElementById('task-tab');
-    if (taskTab) {
-        const problemContent = taskTab.querySelector('.problem-content');
-        if (problemContent) {
-            let html = `<h3>${task.title || task.id || 'Задача'}</h3>`;
-            html += `<div class="task-description"><p style="white-space: pre-wrap;">${task.description || 'Описание задачи отсутствует'}</p></div>`;
-            
-            if (task.constraints) {
-                html += `<div class="task-constraints" style="margin-top: 15px; padding: 10px; background: #F3F4F6; border-radius: 6px;">
-                    <strong>Ограничения:</strong>
-                    <p style="white-space: pre-wrap;">${task.constraints}</p>
-                </div>`;
-            }
-            
-            problemContent.innerHTML = html;
-        }
-    }
-    
-    // Обновляем примеры во вкладке "Примеры"
-    const examplesTab = document.getElementById('examples-tab');
-    if (examplesTab && task.test_cases && Array.isArray(task.test_cases)) {
-        let examplesHTML = '<h4>Все примеры ввода/вывода:</h4>';
-        task.test_cases.forEach((testCase, index) => {
-            const input = testCase.input || '';
-            const output = testCase.output || '';
-            examplesHTML += `
-                <div style="margin-bottom: 20px; padding: 15px; background: #1F2937; color: #F9FAFB; border-radius: 6px; font-family: monospace;">
-                    <div style="margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #374151;">
-                        <strong style="color: #9CA3AF;">Пример ${index + 1}:</strong>
-                    </div>
-                    <div style="margin-bottom: 8px;">
-                        <strong style="color: #60A5FA;">Ввод:</strong>
-                        <pre style="margin: 5px 0; white-space: pre-wrap; background: #111827; padding: 8px; border-radius: 4px;">${escapeHtml(input)}</pre>
-                    </div>
-                    <div>
-                        <strong style="color: #34D399;">Вывод:</strong>
-                        <pre style="margin: 5px 0; white-space: pre-wrap; background: #111827; padding: 8px; border-radius: 4px;">${escapeHtml(output)}</pre>
-                    </div>
-                </div>
-            `;
-        });
-        examplesTab.innerHTML = `<div class="problem-content">${examplesHTML}</div>`;
-    }
-    
-    // Обновляем task_id в кнопке
-    const runTestsBtn = document.querySelector('.run-tests-btn');
-    if (runTestsBtn && task.id) {
-        runTestsBtn.dataset.taskId = task.id;
-        runTestsBtn.disabled = false;
-    }
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    consoleContent.innerHTML = '> Тесты запущены...\n> ✓ Тест 1 пройден\n> ✓ Тест 2 пройден\n> ✗ Тест 3 не пройден';
 }
 
 function endInterview() {
@@ -482,7 +214,7 @@ function endInterview() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const editor = document.querySelector('.code-editor');
+
     if (!editor) return;
 
     editor.addEventListener('paste', async function (e) {
@@ -545,4 +277,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+
+function startTimer(durationInSeconds) {
+    let timer = durationInSeconds;
+    let minutes, seconds;
+
+    const interval = setInterval(() => {
+        minutes = parseInt(timer / 60, 10);
+        seconds = parseInt(timer % 60, 10);
+
+        minutes = minutes < 10 ? "0" + minutes : minutes;
+        seconds = seconds < 10 ? "0" + seconds : seconds;
+
+        timerDisplay.textContent = minutes + ":" + seconds;
+
+        if (--timer < 0) {
+            clearInterval(interval);
+            timerDisplay.textContent = "00:00";
+            // ИЗМЕНЕНИЕ: Замена alert() на безопасный console.warn()
+            console.warn("Время собеседования вышло!");
+        }
+    }, 1000);
+}
+
+
+
 

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SciBox Interview - Собеседование</title>
-    <script src="https://www.google.com/recaptcha/api.js?render=6LeNDRksAAAAAFpfLym3unGOmDpGMqTZybb_6QA1"></script>
     <link rel="stylesheet" href="../static/css/styles.css">
 </head>
 <body>
@@ -15,7 +14,6 @@
                 <div class="progress-container">
                     <div class="progress-info">
                         <span>Прогресс: </span>
-                        <span id="progressText">0/? задач</span>
                     </div>
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressFill" style="width: 0%"></div>
@@ -30,85 +28,39 @@
             <!-- Левая панель - Задача -->
             <div class="problem-panel">
                 <div class="panel-tabs">
-                    <div class="tab active" data-tab="task">Задача</div>
-                    <div class="tab" data-tab="examples">Примеры</div>
+                    <div class="tab active">Задача</div>
                 </div>
                 <div class="panel-content">
-                    <!-- Вкладка "Задача" -->
-                    <div class="tab-content active" id="task-tab">
-                        <div class="problem-content">
-                            {% if error %}
-                                <div class="error-message" style="color: #EF4444; padding: 20px; background: #FEE2E2; border-radius: 8px; margin-bottom: 20px;">
-                                    <h3>Ошибка загрузки задачи</h3>
-                                    <p>{{ error }}</p>
-                                </div>
-                            {% elif task %}
-                                <h3>{{ task.get('title', task.get('id', 'Задача')) }}</h3>
-                                <div class="task-description">
-                                    <p style="white-space: pre-wrap;">{{ task.get('description', 'Описание задачи отсутствует') }}</p>
-                                </div>
-                                {% if task.get('constraints') %}
-                                    <div class="task-constraints" style="margin-top: 15px; padding: 10px; background: #F3F4F6; border-radius: 6px;">
-                                        <strong>Ограничения:</strong>
-                                        <p style="white-space: pre-wrap;">{{ task.get('constraints') }}</p>
-                                    </div>
-                                {% endif %}
-                            {% else %}
-                                <h3>Загрузка задачи...</h3>
-                                <p>Пожалуйста, подождите, задача генерируется...</p>
-                            {% endif %}
-                        </div>
-                        {% if task and task.get('id') %}
-                            <button class="btn btn-primary run-tests-btn" data-task-id="{{ task.get('id') }}" onclick="runTests()">
-                                Запустить тесты
-                            </button>
-                        {% else %}
-                            <button class="btn btn-primary run-tests-btn" data-task-id="" onclick="runTests()" disabled>
-                                Запустить тесты
-                            </button>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Вкладка "Примеры" -->
-                    <div class="tab-content" id="examples-tab" style="display: none;">
-                        <div class="problem-content">
-                            {% if task and task.get('test_cases') %}
-                                <h4>Все примеры ввода/вывода:</h4>
-                                {% for test_case in task.get('test_cases', []) %}
-                                    <div style="margin-bottom: 20px; padding: 15px; background: #1F2937; color: #F9FAFB; border-radius: 6px; font-family: monospace;">
-                                        <div style="margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #374151;">
-                                            <strong style="color: #9CA3AF;">Пример {{ loop.index }}:</strong>
-                                        </div>
-                                        <div style="margin-bottom: 8px;">
-                                            <strong style="color: #60A5FA;">Ввод:</strong>
-                                            <pre style="margin: 5px 0; white-space: pre-wrap; background: #111827; padding: 8px; border-radius: 4px;">{{ test_case.get('input', '') }}</pre>
-                                        </div>
-                                        <div>
-                                            <strong style="color: #34D399;">Вывод:</strong>
-                                            <pre style="margin: 5px 0; white-space: pre-wrap; background: #111827; padding: 8px; border-radius: 4px;">{{ test_case.get('output', '') }}</pre>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            {% elif task %}
-                                <p>Примеры тестовых случаев отсутствуют</p>
-                            {% else %}
-                                <p>Задача не загружена</p>
-                            {% endif %}
+                    <div class="problem-content">
+                        <h3>Название задачи</h3>
+                        <p>Описание задачи будет загружено здесь...</p>
+                        <div class="code-block">
+                            Пример ввода/вывода будет здесь...
                         </div>
                     </div>
+                    <button class="btn btn-primary run-tests-btn" onclick="runTests()">
+                        Запустить тесты
+                    </button>
                 </div>
             </div>
 
             <!-- Центральная панель - Редактор -->
             <div class="editor-panel">
                 <div class="editor-header">
-                    <select class="language-select">
-                        <option value="python">Python</option>
-                        <option value="go">Go</option>
-                        <option value="java">Java</option>
-                        <option value="cpp">C++</option>
-                    </select>
-                </div>
+        <!-- Кастомный dropdown -->
+        <div class="custom-dropdown" id="languageDropdown">
+            <div class="dropdown-selected" id="dropdownSelected">
+                <span class="selected-text">Python</span>
+                <div class="dropdown-arrow"></div>
+            </div>
+            <div class="dropdown-options">
+                <div class="dropdown-option" data-value="python">Python</div>
+                <div class="dropdown-option" data-value="javascript">JavaScript</div>
+                <div class="dropdown-option" data-value="java">Java</div>
+                <div class="dropdown-option" data-value="cpp">C++</div>
+            </div>
+        </div>
+    </div>
                 <div class="editor-area">
                     <textarea class="code-editor" placeholder="// Напишите ваш код здесь...">
 // Пример кода
@@ -155,155 +107,204 @@ function solution() {
             <button class="btn btn-primary" onclick="redirectNow()">Перейти к результатам</button>
         </div>
     </div>
+    <script src="/static/js/interview.js"></script>
+   <script>
+    // Переменные для управления
+    let timerInterval;
+    let totalTime = 45 * 60; // 45 минут в секундах
+    let timeLeft = totalTime;
 
-    <script>
-        // Переменные для управления
-        let timerInterval;
-        let totalTime = 45 * 60; // 45 минут в секундах
-        let timeLeft = totalTime;
-        
-        // Прогресс по задачам
-        let totalTasks = 4; // Всего задач в собеседовании
-        let completedTasks = 0; // Решенные задачи
-        let currentTaskProgress = 0; // Прогресс текущей задачи (0-100%)
+    // Прогресс по задачам
+    let totalTasks = 4; // Всего задач в собеседовании
+    let completedTasks = 0; // Решенные задачи
+    let currentTaskProgress = 0; // Прогресс текущей задачи (0-100%)
 
-        // Запуск при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            startTimer();
-            updateProgressBar();
-            
-            // Сохраняем task_id в глобальную переменную для использования в runTests()
-            const runTestsBtn = document.querySelector('.run-tests-btn');
-            if (runTestsBtn && runTestsBtn.dataset.taskId) {
-                window.currentTaskId = runTestsBtn.dataset.taskId;
+    // Запуск при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        startTimer();
+        updateProgressBar();
+        initLanguageDropdown();
+    });
+
+    // Функции для кастомного dropdown
+    function initLanguageDropdown() {
+        const dropdown = document.getElementById('languageDropdown');
+        const selected = document.getElementById('dropdownSelected');
+        const options = dropdown.querySelector('.dropdown-options');
+        const arrow = dropdown.querySelector('.dropdown-arrow');
+
+        // Обработчик клика на выбранный элемент
+        selected.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isActive = selected.classList.contains('active');
+
+            // Закрыть все открытые dropdown
+            closeAllDropdowns();
+
+            if (!isActive) {
+                selected.classList.add('active');
+                options.classList.add('show');
+                arrow.classList.add('rotated');
+                createDropdownOverlay();
             }
-            
-            // Обработка переключения вкладок
-            const tabs = document.querySelectorAll('.panel-tabs .tab');
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabName = this.dataset.tab;
-                    
-                    // Убираем активный класс со всех вкладок
-                    tabs.forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Скрываем все содержимое вкладок
-                    document.querySelectorAll('.tab-content').forEach(content => {
-                        content.style.display = 'none';
-                        content.classList.remove('active');
-                    });
-                    
-                    // Показываем выбранную вкладку
-                    const targetTab = document.getElementById(tabName + '-tab');
-                    if (targetTab) {
-                        targetTab.style.display = 'block';
-                        targetTab.classList.add('active');
-                    }
-                });
-            });
         });
 
-        // Функции таймера
-        function startTimer() {
+        // Обработчики для опций
+        const optionElements = options.querySelectorAll('.dropdown-option');
+        optionElements.forEach(option => {
+            option.addEventListener('click', function() {
+                const value = this.getAttribute('data-value');
+                const text = this.textContent;
+
+                // Обновляем выбранный элемент
+                selected.querySelector('.selected-text').textContent = text;
+
+                // Обновляем выделение в dropdown
+                updateLanguageSelection(value);
+
+                // Закрываем dropdown
+                closeDropdown();
+            });
+        });
+    }
+
+    function createDropdownOverlay() {
+        const overlay = document.createElement('div');
+        overlay.className = 'dropdown-overlay';
+        overlay.style.display = 'block';
+        document.body.appendChild(overlay);
+
+        overlay.addEventListener('click', closeAllDropdowns);
+    }
+
+    function closeDropdown() {
+        const dropdown = document.getElementById('languageDropdown');
+        const selected = document.getElementById('dropdownSelected');
+        const options = dropdown.querySelector('.dropdown-options');
+        const arrow = dropdown.querySelector('.dropdown-arrow');
+
+        selected.classList.remove('active');
+        options.classList.remove('show');
+        arrow.classList.remove('rotated');
+
+        // Удаляем overlay
+        const overlay = document.querySelector('.dropdown-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+
+    function closeAllDropdowns() {
+        closeDropdown();
+    }
+
+    function updateLanguageSelection(selectedValue) {
+        const options = document.querySelectorAll('.dropdown-option');
+        options.forEach(option => {
+            option.classList.remove('selected');
+            if (option.getAttribute('data-value') === selectedValue) {
+                option.classList.add('selected');
+            }
+        });
+
+    // Функции таймера
+    function startTimer() {
+        updateTimerDisplay();
+
+        timerInterval = setInterval(function() {
+            timeLeft--;
             updateTimerDisplay();
-            
-            timerInterval = setInterval(function() {
-                timeLeft--;
-                updateTimerDisplay();
-                
-                // Изменение цвета при малом времени
-                const timerElement = document.getElementById('timer');
-                if (timeLeft <= 300) { // 5 минут
-                    timerElement.style.color = '#EF4444';
-                    if (timeLeft <= 60) {
-                        timerElement.style.animation = 'pulse 1s infinite';
-                    }
-                }
-                
-                // Проверка окончания времени
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    showTimeUpModal();
-                }
-            }, 1000);
-        }
 
-        function updateTimerDisplay() {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            document.getElementById('timer').textContent = 
-                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        // Функции прогресса задач
-        function updateProgressBar() {
-            // Общий прогресс = завершенные задачи + прогресс текущей задачи
-            const overallProgress = (completedTasks / totalTasks) * 100 + 
-                                  (currentTaskProgress / totalTasks);
-            
-            const progressFill = document.getElementById('progressFill');
-            const progressText = document.getElementById('progressText');
-            
-            progressFill.style.width = Math.min(overallProgress, 100) + '%';
-            progressText.textContent = `${completedTasks}/${totalTasks} задач`;
-            
-            // Меняем цвет прогресс-бара в зависимости от прогресса
-            if (overallProgress >= 75) {
-                progressFill.style.background = 'linear-gradient(90deg, #00E5A8, #00AAE5)';
-            } else if (overallProgress >= 50) {
-                progressFill.style.background = 'linear-gradient(90deg, #F59E0B, #00AAE5)';
-            } else {
-                progressFill.style.background = 'linear-gradient(90deg, #00AAE5, #0090C5)';
+            // Изменение цвета при малом времени
+            const timerElement = document.getElementById('timer');
+            if (timeLeft <= 300) { // 5 минут
+                timerElement.style.color = '#EF4444';
+                if (timeLeft <= 60) {
+                    timerElement.style.animation = 'pulse 1s infinite';
+                }
             }
-        }
 
-        function completeTask() {
-            completedTasks++;
-            currentTaskProgress = 0;
-            updateProgressBar();
-            
-            // Уведомление в чат
-            addMessage(`Задача ${completedTasks} завершена! Переходим к следующей...`, 'ai');
-            
-            // Если все задачи решены
-            if (completedTasks >= totalTasks) {
+            // Проверка окончания времени
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                showTimeUpModal();
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById('timer').textContent =
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Функции прогресса задач
+    function updateProgressBar() {
+        // Общий прогресс = завершенные задачи + прогресс текущей задачи
+        const overallProgress = (completedTasks / totalTasks) * 100 +
+                              (currentTaskProgress / totalTasks);
+
+        const progressFill = document.getElementById('progressFill');
+
+        progressFill.style.width = Math.min(overallProgress, 100) + '%';
+
+        // Меняем цвет прогресс-бара в зависимости от прогресса
+        if (overallProgress >= 75) {
+            progressFill.style.background = 'linear-gradient(90deg, #00E5A8, #00AAE5)';
+        } else if (overallProgress >= 50) {
+            progressFill.style.background = 'linear-gradient(90deg, #F59E0B, #00AAE5)';
+        } else {
+            progressFill.style.background = 'linear-gradient(90deg, #00AAE5, #0090C5)';
+        }
+    }
+
+    function completeTask() {
+        completedTasks++;
+        currentTaskProgress = 0;
+        updateProgressBar();
+
+        // Уведомление в чат
+        addMessage(`Задача ${completedTasks} завершена! Переходим к следующей...`, 'ai');
+
+        // Если все задачи решены
+        if (completedTasks >= totalTasks) {
+            setTimeout(() => {
+                addMessage('Поздравляю! Вы решили все задачи собеседования.', 'ai');
                 setTimeout(() => {
-                    addMessage('Поздравляю! Вы решили все задачи собеседования.', 'ai');
-                    setTimeout(() => {
-                        endInterviewSuccess();
-                    }, 2000);
-                }, 1000);
-            }
-        }
-
-        function updateTaskProgress(progress) {
-            currentTaskProgress = progress;
-            updateProgressBar();
-        }
-
-        function endInterviewSuccess() {
-            clearInterval(timerInterval);
-            alert('Все задачи решены! Переходим к результатам...');
-            window.location.href = 'results';
-        }
-
-        // Модальное окно
-        function showTimeUpModal() {
-            const modal = document.getElementById('timeUpModal');
-            modal.style.display = 'flex';
-            
-            let countdown = 5;
-            const countdownElement = document.getElementById('redirectCountdown');
-            
-            const countdownInterval = setInterval(() => {
-                countdownElement.textContent = countdown;
-                if (countdown-- <= 0) {
-                    clearInterval(countdownInterval);
-                    redirectToResults();
-                }
+                    endInterviewSuccess();
+                }, 2000);
             }, 1000);
         }
+    }
+
+    function updateTaskProgress(progress) {
+        currentTaskProgress = progress;
+        updateProgressBar();
+    }
+
+    function endInterviewSuccess() {
+        clearInterval(timerInterval);
+        alert('Все задачи решены! Переходим к результатам...');
+        window.location.href = 'results';
+    }
+
+    // Модальное окно
+    function showTimeUpModal() {
+        const modal = document.getElementById('timeUpModal');
+        modal.style.display = 'flex';
+
+        let countdown = 5;
+        const countdownElement = document.getElementById('redirectCountdown');
+
+        const countdownInterval = setInterval(() => {
+            countdownElement.textContent = countdown;
+            if (countdown-- <= 0) {
+                clearInterval(countdownInterval);
+                redirectToResults();
+            }
+        }, 1000);
+    }
 
         function redirectNow() {
             redirectToResults();
@@ -349,4 +350,9 @@ function solution() {
     <script src="/static/js/interview.js"></script>
 </body>
 </html>
+
+
+
+
+
 
