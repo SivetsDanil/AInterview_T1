@@ -1,6 +1,8 @@
 from flask import Flask, render_template, redirect,request,jsonify
 from flask_login import LoginManager, login_required, logout_user
 from flask import request, session, jsonify
+from ai_interviewer import setup_scibox, interview_step
+
 import requests
 from dotenv import load_dotenv
 import os
@@ -27,6 +29,18 @@ app.register_blueprint(results_bp)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+
+
+import os
+
+# === ИНИЦИАЛИЗАЦИЯ SciBox ПРИ СТАРТЕ ===
+SCIBOX_API_KEY = os.getenv("SCIBOX_API_KEY", "sk-gqlpOmmxNrBvLyv766GXYg")  # ← ваш ключ
+try:
+    setup_scibox(SCIBOX_API_KEY)
+    print("✅ SciBox инициализирован")
+except Exception as e:
+    print(f"❌ ОШИБКА инициализации SciBox: {e}")
 
 
 
@@ -107,25 +121,29 @@ from flask import request, jsonify
 def chat():
     try:
         data = request.get_json()
-
-
-        #ВОТ СООБЩЕНИЕ ЮЗЕРА
         user_message = data.get('message', '').strip()
+        topic = data.get('topic', 'общая разработка').strip()  # ← важно: тема!
 
         if not user_message:
             return jsonify({'error': 'Empty message'}), 400
 
-        #ВОТ ТУТ ФОРМИРУЕТЕ ОТВЕТ
-        bot_reply = f"Умный ответ на твое {user_message}"
-
-
-        return jsonify({
+        bot_reply, evaluation = interview_step(topic, user_message)
+        bot_reply = bot_reply.replace('<think>\n\n</think>\n\n', '')
+        print([bot_reply])
+        # Опционально: если пришла оценка — можно её сохранить или выделить
+        response_data = {
             'reply': bot_reply,
             'status': 'success'
-        })
+        }
+        if evaluation is not None:
+            response_data['evaluation'] = evaluation
+
+        return jsonify(response_data)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
 
 from flask import request, jsonify
 

@@ -94,7 +94,10 @@ async function sendMessage() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ message: message })
+            body: JSON.stringify({
+                message: message,
+                topic: "IT"  // ← вот эта строка критична!
+              })
         });
 
         const data = await response.json();
