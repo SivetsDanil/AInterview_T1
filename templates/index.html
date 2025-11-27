@@ -27,19 +27,19 @@
                     <div class="direction-name">Backend Development</div>
                     <div class="direction-desc">Алгоритмы, базы данных, API, системы распределения</div>
                 </div>
-
+                
                 <div class="direction-card" onclick="selectDirection(this)">
                     <div class="direction-icon">🎨</div>
                     <div class="direction-name">Frontend Development</div>
                     <div class="direction-desc">JavaScript, React, UI/UX, производительность браузера</div>
                 </div>
-
+                
                 <div class="direction-card" onclick="selectDirection(this)">
                     <div class="direction-icon">📊</div>
                     <div class="direction-name">Data Science</div>
                     <div class="direction-desc">Анализ данных, ML алгоритмы, статистика, визуализация</div>
                 </div>
-
+                
                 <div class="direction-card" onclick="selectDirection(this)">
                     <div class="direction-icon">📱</div>
                     <div class="direction-name">Mobile Development</div>
@@ -57,14 +57,14 @@
 
     <script>
         let selectedDirection = null;
-
+        
         function selectDirection(card) {
             document.querySelectorAll('.direction-card').forEach(c => {
                 c.classList.remove('selected');
             });
             card.classList.add('selected');
             selectedDirection = card.querySelector('.direction-name').textContent;
-
+            
             // Активируем кнопку
             document.getElementById('start-btn').disabled = false;
         }
@@ -93,3 +93,5 @@
     </script>
 </body>
 </html>
+
+
