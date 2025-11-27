@@ -272,90 +272,75 @@ function addMessage(text, sender) {
 // Делаем функцию глобальной для доступа из onclick
 window.runTests = async function runTests() {
     console.log('runTests вызвана');
+
     const consoleContent = document.querySelector('.console-content') || document.getElementById('consoleOutput');
     const codeEditor = document.querySelector('.code-editor');
     const languageSelect = document.querySelector('.language-select');
-    
+
     if (!consoleContent) {
         console.error('Не найден элемент .console-content или #consoleOutput');
         return;
     }
-    
-    // Получаем код из редактора
+
     const userCode = codeEditor ? codeEditor.value.trim() : '';
     const language = languageSelect ? languageSelect.value : 'python';
-    
-    // Получаем task_id (можно из data-атрибута кнопки или из глобальной переменной)
-    const taskId = document.querySelector('.run-tests-btn')?.dataset.taskId || 
-                   window.currentTaskId || 
-                   'default_task_id';
-    
-    console.log('Task ID:', taskId, 'Language:', language, 'Code length:', userCode.length);
-    
+    const taskId = document.querySelector('.run-tests-btn')?.dataset.taskId || window.currentTaskId || 'default_task_id';
+
     if (!userCode) {
         consoleContent.innerHTML = '> ❌ Ошибка: Код не может быть пустым';
         return;
     }
-    
-    // Показываем, что запрос отправляется
+
     consoleContent.innerHTML = '> Тесты запущены...\n> Выполнение кода...';
-    
+
     try {
-        console.log('Отправка запроса на /api/run-tests');
-        // Сначала выполняем реальные тесты
         const testResponse = await fetch('/api/run-tests', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                task_id: taskId,
-                user_code: userCode,
-                language: language
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ task_id: taskId, user_code: userCode, language })
         });
-        
-        console.log('Ответ получен, статус:', testResponse.status);
+
         const testData = await testResponse.json();
-        console.log('Данные ответа:', testData);
-        
+
         if (testResponse.ok && testData.status === 'success') {
-            const passed = testData.passed;
-            const total = testData.total;
-            const allPassed = testData.all_passed;
-            const testResults = testData.test_results || [];
-            
+            const { passed, total, all_passed: allPassed } = testData;
+            const testResults = Array.isArray(testData.test_results) ? testData.test_results : [];
+
             let output = `> Результаты тестов: ${passed}/${total} пройдено\n\n`;
-            
-            // Показываем результаты каждого теста
-            testResults.forEach(test => {
-                if (test.status === 'passed') {
-                    output += `> ✓ Тест ${test.test}: ПРОЙДЕН\n`;
-                } else if (test.status === 'failed') {
-                    output += `> ✗ Тест ${test.test}: НЕ ПРОЙДЕН\n`;
-                    output += `>   Ввод: ${test.input}\n`;
-                    output += `>   Ожидалось: ${test.expected}\n`;
-                    output += `>   Получено: ${test.actual}\n\n`;
-                } else if (test.status === 'error') {
-                    output += `> ✗ Тест ${test.test}: ОШИБКА\n`;
-                    output += `>   ${test.error}\n\n`;
-                } else if (test.status === 'timeout') {
-                    output += `> ✗ Тест ${test.test}: ТАЙМАУТ\n\n`;
+
+            testResults.forEach((testObj, idx) => {
+                const testNum = testObj.test ?? idx + 1;
+                const status = (testObj.status || '').toLowerCase();
+                const expected = (testObj.expected ?? '').trim();
+                const actual = (testObj.actual ?? '').trim();
+
+                if (status === 'error') {
+                    output += `> ✗ Тест ${testNum}: ОШИБКА\n>   ${testObj.error || 'Runtime/Compilation error'}\n\n`;
+                    return;
+                }
+
+                if (status === 'timeout') {
+                    output += `> ✗ Тест ${testNum}: ТАЙМАУТ\n\n`;
+                    return;
+                }
+
+                if (expected === actual && status !== 'failed') {
+                    output += `> ✓ Тест ${testNum}: ПРОЙДЕН\n`;
+                } else {
+                    output += `> ✗ Тест ${testNum}: НЕ ПРОЙДЕН\n>   Ввод: ${testObj.input}\n>   Ожидалось: ${expected}\n>   Получено: ${actual}\n\n`;
                 }
             });
-            
+
             if (allPassed) {
                 output += '\n> 🎉 Все тесты пройдены! Задача решена.\n';
                 consoleContent.innerHTML = output;
-                
-                // Генерируем новую задачу и очищаем редактор
                 await loadNewTask();
             } else {
-                output += `\n> ❌ Не все тесты пройдены. Продолжайте работу.\n`;
+                output += '\n> ❌ Не все тесты пройдены. Продолжайте работу.\n';
                 consoleContent.innerHTML = output;
             }
         } else {
-            let errorMsg = testData.message || testData.error || 'Ошибка выполнения тестов';
+            const errorMsg = testData.message || testData.error || 'Ошибка выполнения тестов';
             consoleContent.innerHTML = `> ❌ Ошибка: ${errorMsg}`;
         }
     } catch (error) {
