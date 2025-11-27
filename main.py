@@ -3,7 +3,7 @@ from flask_login import LoginManager, login_required, logout_user
 import requests
 from dotenv import load_dotenv
 import os
-from api import IndexAPI, InterniewAPI, ResultsAPI
+from api import IndexAPI, InterviewAPI, ResultsAPI
 from api.task_gen import TaskGenerator
 
 app = Flask(__name__)
@@ -143,9 +143,8 @@ def handle_code_paste():
 def main():
     # Сохраняем TaskGenerator в конфигурации приложения для доступа из blueprint
     app.config['TASK_GENERATOR'] = task_generator
-    
     app.register_blueprint(IndexAPI.blueprint)
-    app.register_blueprint(InterniewAPI.blueprint)
+    app.register_blueprint(InterviewAPI.blueprint)
     app.register_blueprint(ResultsAPI.blueprint)
 
     app.run(port=5000, host='127.0.0.1', debug=True)
