@@ -120,6 +120,7 @@ class TaskGenerator:
 
     Требования к задаче:
     - Конкретная техническая задача.
+    - Название задачи (title) — короткое, ёмкое, до 8 слов.
     - Время выполнения задачи не более 30 минут.
     - Четко описанные входные и выходные данные.
     - Набор тестовых случаев для проверки решения.
@@ -132,6 +133,7 @@ class TaskGenerator:
 
     {{
       "id": "уникальный_идентификатор_задачи",
+      "title": "краткое название задачи",
       "description": "Подробная постановка задачи на русском языке",
       "constraints": "Ограничения по входным данным, времени и памяти (если есть)",
       "test_cases": [
@@ -156,6 +158,11 @@ class TaskGenerator:
 
             if not isinstance(task_data, dict) or "id" not in task_data:
                 raise ValueError("В ответе нет корректного поля 'id'")
+
+            if not task_data.get("title"):
+                description = task_data.get("description", "").strip()
+                fallback_title = description.splitlines()[0][:80].strip() if description else ""
+                task_data["title"] = fallback_title or f"Задача {task_data['id']}"
 
             self.task_cache[task_data["id"]] = task_data
             return task_data
@@ -217,15 +224,15 @@ class TaskGenerator:
 
 Формат ответа (строго валидный JSON):
 
-{{
+{
   "task_id": "{task_id}",
-  "solutions": {{
+  "solutions": {
     "python": "код решения на Python (если язык запрошен)",
     "cpp": "код решения на C++ (если язык запрошен)",
     "java": "код решения на Java (если язык запрошен)",
     "go": "код решения на Go (если язык запрошен)"
-  }}
-}}
+  }
+}
         """.strip()
 
         try:
@@ -301,14 +308,14 @@ class TaskGenerator:
 
 Формат ответа (строго валидный JSON):
 
-{{
+{
   "Correctness": "оценка корректности и краткое пояснение",
   "Efficiency": "оценка сложности и производительности",
   "CodeQuality": "оценка стиля и читаемости",
   "Safety": "оценка надёжности и потенциальных рисков",
   "TestsSummary": "проходят ли тестовые случаи и какие нет (если есть проблемы)",
   "Summary": "краткое общее резюме по решению"
-}}
+}
         """.strip()
 
         try:
@@ -336,3 +343,4 @@ class TaskGenerator:
                 "error": str(e),
                 "task_id": task_id,
             }
+

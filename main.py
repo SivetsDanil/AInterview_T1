@@ -1,10 +1,10 @@
-from flask import Flask, render_template, redirect,request,jsonify
+from flask import Flask, render_template, redirect, request, jsonify
 from flask_login import LoginManager, login_required, logout_user
 import requests
 from dotenv import load_dotenv
 import os
-from api import IndexAPI, InterniewAPI, ResultsAPI
-from api.task_gen import TaskGenerator
+from api import IndexAPI, InterviewAPI, ResultsAPI
+from task_gen import TaskGenerator
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "key"
@@ -40,9 +40,9 @@ except Exception as e:
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-
-
 login_manager.login_view = 'login'
+
+
 class User:
     def __init__(self, id):
         self.id = id
@@ -65,8 +65,6 @@ def load_user(user_id):
     return User(id=1)
 
 
-
-
 # выход с аккаунта
 @app.route('/logout')
 @login_required
@@ -83,6 +81,7 @@ def not_found_error(_):
 
 from flask import request, jsonify
 
+
 # ... остальной код ...
 
 @app.route('/api/chat', methods=['POST'])
@@ -90,16 +89,14 @@ def chat():
     try:
         data = request.get_json()
 
-
-        #ВОТ СООБЩЕНИЕ ЮЗЕРА
+        # ВОТ СООБЩЕНИЕ ЮЗЕРА
         user_message = data.get('message', '').strip()
 
         if not user_message:
             return jsonify({'error': 'Empty message'}), 400
 
-        #ВОТ ТУТ ФОРМИРУЕТЕ ОТВЕТ
+        # ВОТ ТУТ ФОРМИРУЕТЕ ОТВЕТ
         bot_reply = f"Умный ответ на твое {user_message}"
-
 
         return jsonify({
             'reply': bot_reply,
@@ -109,7 +106,9 @@ def chat():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 from flask import request, jsonify
+
 
 @app.route('/api/code-paste', methods=['POST'])
 def handle_code_paste():
@@ -143,19 +142,21 @@ def handle_code_paste():
 def main():
     # Сохраняем TaskGenerator в конфигурации приложения для доступа из blueprint
     app.config['TASK_GENERATOR'] = task_generator
-    
+
     app.register_blueprint(IndexAPI.blueprint)
-    app.register_blueprint(InterniewAPI.blueprint)
+    app.register_blueprint(InterviewAPI.blueprint)
     app.register_blueprint(ResultsAPI.blueprint)
 
     app.run(port=5000, host='127.0.0.1', debug=True)
+
+
 @app.route('/verify', methods=['POST'])
 def verify_recaptcha():
     """Обрабатывает AJAX-запрос с токеном reCAPTCHA и проверяет его."""
-    
+
     recaptcha_response = request.form.get('g-recaptcha-response')
-    user_message = request.form.get('message') 
-    
+    user_message = request.form.get('message')
+
     if not recaptcha_response:
         return jsonify({'success': False, 'message': 'Токен reCAPTCHA отсутствует'}), 400
 
@@ -163,7 +164,7 @@ def verify_recaptcha():
         'secret': SECRET_KEY_RECAPTCHA,
         'response': recaptcha_response
     }
-    
+
     VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify"
     try:
         response = requests.post(VERIFY_URL, data=payload)
@@ -172,16 +173,16 @@ def verify_recaptcha():
         return jsonify({'success': False, 'message': f'Ошибка при связи с Google: {e}'}), 500
 
     if result.get('success'):
-        score = result.get('score', 1.0) 
-        
+        score = result.get('score', 1.0)
+
         # Рекомендованный порог для reCAPTCHA v3
         if score >= 0.5:
             # TODO: Здесь вызывайте ваш LLM API (llm.t1v.scibox.tech)
             # Временно используем заглушку
             LLM_RESPONSE = f"Спасибо за ваш вопрос! reCAPTCHA успешно пройдена. Счет - {score}"
-            
+
             return jsonify({
-                'success': True, 
+                'success': True,
                 'score': score,
                 'ai_response': LLM_RESPONSE
             }), 200
@@ -190,6 +191,7 @@ def verify_recaptcha():
     else:
         return jsonify({'success': False, 'message': 'Неудачная верификация', 'errors': result.get('error-codes')}), 403
 
+
 @app.route('/api/run-tests', methods=['POST'])
 def run_tests_endpoint():
     """Endpoint для реального выполнения тестов"""
@@ -197,43 +199,51 @@ def run_tests_endpoint():
     import tempfile
     import os
     import json
-    
+
+    def normalize_snippet(value):
+        """Приводит любые данные к тексту для записи в файлы и stdin."""
+        if isinstance(value, list):
+            return "\n".join(str(item) for item in value)
+        if isinstance(value, dict):
+            return json.dumps(value, ensure_ascii=False)
+        return '' if value is None else str(value)
+
     try:
         if not request.is_json:
             return jsonify({'error': 'Content-Type must be application/json'}), 400
-        
+
         data = request.get_json()
         task_id = data.get('task_id')
-        user_code = data.get('user_code', '')
+        user_code = normalize_snippet(data.get('user_code', ''))
         language = data.get('language', 'python').lower()  # Нормализуем язык к нижнему регистру
-        
+
         if not task_id:
             return jsonify({'error': 'task_id is required'}), 400
-        
+
         if not user_code:
             return jsonify({'error': 'user_code is required'}), 400
-        
+
         if task_generator is None:
             return jsonify({'error': 'TaskGenerator not initialized'}), 500
-        
+
         # Получаем задачу из кэша
         task = task_generator.task_cache.get(task_id)
         if not task:
             return jsonify({'error': f'Task {task_id} not found'}), 404
-        
+
         test_cases = task.get('test_cases', [])
         if not test_cases:
             return jsonify({'error': 'No test cases found'}), 400
-        
+
         # Выполняем тесты
         passed_tests = 0
         total_tests = len(test_cases)
         test_results = []
-        
+
         for i, test_case in enumerate(test_cases):
-            test_input = test_case.get('input', '')
-            expected_output = str(test_case.get('output', '')).strip()
-            
+            test_input = normalize_snippet(test_case.get('input', ''))
+            expected_output = normalize_snippet(test_case.get('output', '')).strip()
+
             try:
                 # Выполняем код с тестовым вводом
                 if language == 'python':
@@ -241,7 +251,7 @@ def run_tests_endpoint():
                     with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as f:
                         f.write(user_code)
                         temp_file = f.name
-                    
+
                     try:
                         # Запускаем код с входными данными через stdin
                         process = subprocess.run(
@@ -252,7 +262,7 @@ def run_tests_endpoint():
                             timeout=5,
                             encoding='utf-8'
                         )
-                        
+
                         # Получаем вывод
                         if process.returncode == 0:
                             actual_output = process.stdout.strip()
@@ -268,11 +278,11 @@ def run_tests_endpoint():
                                 'error': 'Runtime error'
                             })
                             continue
-                        
+
                         # Сравниваем результаты (игнорируем пробелы в конце)
                         actual_clean = actual_output.strip()
                         expected_clean = expected_output.strip()
-                        
+
                         if actual_clean == expected_clean:
                             passed_tests += 1
                             test_results.append({
@@ -304,7 +314,7 @@ def run_tests_endpoint():
                             if 'package main' not in user_code:
                                 f.write('package main\n\n')
                             f.write(user_code)
-                        
+
                         # Запускаем код Go с входными данными через stdin
                         process = subprocess.run(
                             ['go', 'run', go_file],
@@ -315,7 +325,7 @@ def run_tests_endpoint():
                             encoding='utf-8',
                             cwd=temp_dir
                         )
-                        
+
                         if process.returncode == 0:
                             actual_output = process.stdout.strip()
                         else:
@@ -329,10 +339,10 @@ def run_tests_endpoint():
                                 'error': 'Compilation or runtime error'
                             })
                             continue
-                        
+
                         actual_clean = actual_output.strip()
                         expected_clean = expected_output.strip()
-                        
+
                         if actual_clean == expected_clean:
                             passed_tests += 1
                             test_results.append({
@@ -354,7 +364,7 @@ def run_tests_endpoint():
                         import shutil
                         if os.path.exists(temp_dir):
                             shutil.rmtree(temp_dir, ignore_errors=True)
-                
+
                 elif language == 'java':
                     # Создаем временный файл с кодом Java
                     # Java требует, чтобы имя класса совпадало с именем файла
@@ -370,7 +380,7 @@ def run_tests_endpoint():
                         f.write(java_code)
                         temp_file = f.name
                         temp_dir = os.path.dirname(temp_file)
-                    
+
                     try:
                         # Компилируем Java код
                         compile_process = subprocess.run(
@@ -381,7 +391,7 @@ def run_tests_endpoint():
                             encoding='utf-8',
                             cwd=temp_dir
                         )
-                        
+
                         if compile_process.returncode != 0:
                             actual_output = compile_process.stderr.strip()
                             test_results.append({
@@ -393,7 +403,7 @@ def run_tests_endpoint():
                                 'error': 'Compilation error'
                             })
                             continue
-                        
+
                         # Запускаем скомпилированный класс
                         run_process = subprocess.run(
                             ['java', '-cp', temp_dir, 'Solution'],
@@ -403,7 +413,7 @@ def run_tests_endpoint():
                             timeout=5,
                             encoding='utf-8'
                         )
-                        
+
                         if run_process.returncode == 0:
                             actual_output = run_process.stdout.strip()
                         else:
@@ -417,10 +427,10 @@ def run_tests_endpoint():
                                 'error': 'Runtime error'
                             })
                             continue
-                        
+
                         actual_clean = actual_output.strip()
                         expected_clean = expected_output.strip()
-                        
+
                         if actual_clean == expected_clean:
                             passed_tests += 1
                             test_results.append({
@@ -445,7 +455,7 @@ def run_tests_endpoint():
                         class_file = os.path.join(temp_dir, 'Solution.class')
                         if os.path.exists(class_file):
                             os.unlink(class_file)
-                
+
                 elif language == 'cpp' or language == 'c++':
                     # Создаем временный файл с кодом C++
                     with tempfile.NamedTemporaryFile(mode='w', suffix='.cpp', delete=False, encoding='utf-8') as f:
@@ -453,7 +463,7 @@ def run_tests_endpoint():
                         temp_file = f.name
                         temp_dir = os.path.dirname(temp_file)
                         exe_file = os.path.join(temp_dir, 'solution.exe' if os.name == 'nt' else 'solution')
-                    
+
                     try:
                         # Компилируем C++ код
                         compile_process = subprocess.run(
@@ -463,7 +473,7 @@ def run_tests_endpoint():
                             timeout=10,
                             encoding='utf-8'
                         )
-                        
+
                         if compile_process.returncode != 0:
                             actual_output = compile_process.stderr.strip()
                             test_results.append({
@@ -475,7 +485,7 @@ def run_tests_endpoint():
                                 'error': 'Compilation error'
                             })
                             continue
-                        
+
                         # Запускаем скомпилированную программу
                         run_process = subprocess.run(
                             [exe_file],
@@ -485,7 +495,7 @@ def run_tests_endpoint():
                             timeout=5,
                             encoding='utf-8'
                         )
-                        
+
                         if run_process.returncode == 0:
                             actual_output = run_process.stdout.strip()
                         else:
@@ -499,10 +509,10 @@ def run_tests_endpoint():
                                 'error': 'Runtime error'
                             })
                             continue
-                        
+
                         actual_clean = actual_output.strip()
                         expected_clean = expected_output.strip()
-                        
+
                         if actual_clean == expected_clean:
                             passed_tests += 1
                             test_results.append({
@@ -526,13 +536,13 @@ def run_tests_endpoint():
                             os.unlink(temp_file)
                         if os.path.exists(exe_file):
                             os.unlink(exe_file)
-                
+
                 else:
                     # Для других языков возвращаем ошибку
                     return jsonify({
                         'error': f'Language {language} is not supported for test execution yet'
                     }), 400
-                    
+
             except subprocess.TimeoutExpired:
                 test_results.append({
                     'test': i + 1,
@@ -547,9 +557,9 @@ def run_tests_endpoint():
                     'input': test_input,
                     'error': str(e)
                 })
-        
+
         all_passed = passed_tests == total_tests
-        
+
         return jsonify({
             'status': 'success',
             'passed': passed_tests,
@@ -557,7 +567,7 @@ def run_tests_endpoint():
             'all_passed': all_passed,
             'test_results': test_results
         }), 200
-        
+
     except Exception as e:
         error_msg = f"Ошибка при выполнении тестов: {str(e)}"
         print(f"❌ Ошибка в /api/run-tests: {error_msg}")
@@ -566,24 +576,25 @@ def run_tests_endpoint():
             'message': error_msg
         }), 500
 
+
 @app.route('/main', methods=['POST'])
 def review_code_endpoint():
     """Endpoint для обработки запроса на ревью кода"""
     try:
         if not request.is_json:
             return jsonify({'error': 'Content-Type must be application/json'}), 400
-        
+
         data = request.get_json()
         task_id = data.get('task_id')
         user_code = data.get('user_code', '')
         language = data.get('language', 'python')
-        
+
         if not task_id:
             return jsonify({'error': 'task_id is required'}), 400
-        
+
         if not user_code:
             return jsonify({'error': 'user_code is required'}), 400
-        
+
         if task_generator is None:
             error_msg = (
                 'TaskGenerator not initialized. Please set OPENAI_API_KEY and OPENAI_BASE_URL '
@@ -594,14 +605,14 @@ def review_code_endpoint():
                 'error': error_msg,
                 'details': 'Check that OPENAI_API_KEY and OPENAI_BASE_URL are set in .env file'
             }), 500
-        
+
         # Вызываем метод review_code класса TaskGenerator
         result = task_generator.review_code(
             task_id=task_id,
             user_code=user_code,
             language=language
         )
-        
+
         # Выводим результат в консоль PyCharm
         print("=" * 80)
         print("РЕЗУЛЬТАТ РЕВЬЮ КОДА:")
@@ -613,12 +624,12 @@ def review_code_endpoint():
         import json
         print(json.dumps(result, ensure_ascii=False, indent=2))
         print("=" * 80)
-        
+
         return jsonify({
             'status': 'success',
             'result': result
         }), 200
-        
+
     except Exception as e:
         error_msg = f"Ошибка при обработке запроса: {str(e)}"
         print(f"❌ Ошибка в /main: {error_msg}")
@@ -626,6 +637,7 @@ def review_code_endpoint():
             'status': 'error',
             'message': error_msg
         }), 500
+
 
 if __name__ == '__main__':
     main()
