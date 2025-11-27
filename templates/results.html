@@ -1,100 +1,188 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SciBox Interview - Результаты</title>
-    <link rel="stylesheet" href="../static/css/styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="../static/css/styles.css" />
+  </head>
+  <body>
+    <!-- Модальное окно для ввода ФИО -->
+    <div id="fioModal" class="modal">
+      <div class="modal-content">
+        <h3>Введите ваши данные</h3>
+        <p>Для отображения результатов введите ваше ФИО</p>
+        <input
+          type="text"
+          id="fioInput"
+          placeholder="Иванов Иван Иванович"
+          maxlength="100"
+        />
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="saveFIO()">
+            Продолжить
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="container">
-        <header class="header">
-            <div class="logo">SciBox Interview</div>
-        </header>
+      <header class="header">
+        <div class="logo">SciBox Interview</div>
+      </header>
 
-        <div class="results-header">
-            <h1>Собеседование завершено!</h1>
-            <p>Ваши результаты обработаны AI-системой</p>
-        </div>
+      <div class="results-header">
+        <h1>Собеседование завершено!</h1>
+        <p>Ваши результаты обработаны AI-системой</p>
+      </div>
 
-        <div class="results-container">
-            <div class="results-left">
-                <!-- Общий счет -->
-                <div class="card score-card">
-                    <div class="score-placeholder">
-                        <div class="placeholder-text">Общий балл</div>
-                        <div class="score-main">--/10</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- График навыков -->
-                <div class="card">
-                    <h3>Анализ навыков</h3>
-                    <div class="radar-placeholder">
-                        <div class="placeholder-icon">📊</div>
-                        <div class="placeholder-text">График навыков будет сгенерирован AI</div>
-                        <div class="placeholder-hint">Алгоритмы • Оптимальность • Читаемость • Коммуникация</div>
-                    </div>
-                </div>
-
-                <!-- Результаты по задачам -->
-                <div class="card">
-                    <h3>Результаты по задачам</h3>
-                    <div class="tasks-list">
-                        <div class="task-item placeholder">
-                            <span>Загрузка результатов задач...</span>
-                            <span class="score-placeholder">--/10</span>
-                        </div>
-                        <div class="task-item placeholder">
-                            <span>AI анализирует ваши решения</span>
-                            <span class="score-placeholder">--/10</span>
-                        </div>
-                    </div>
-                </div>
+      <div class="results-container">
+        <div class="results-left">
+          <!-- Общий счет -->
+          <div class="card score-card">
+            <div class="score-placeholder">
+              <div class="placeholder-text">Общий балл</div>
+              <div class="score-main">--/10</div>
             </div>
+          </div>
 
-            <div class="results-right">
-                <!-- Сильные стороны -->
-                <div class="card">
-                    <h3>Сильные стороны</h3>
-                    <ul class="bullet-list placeholder-list">
-                        <li class="placeholder-item">AI определяет ваши сильные стороны</li>
-                        <li class="placeholder-item">На основе качества кода и решений</li>
-                        <li class="placeholder-item">И анализа коммуникации</li>
-                    </ul>
-                </div>
-
-                <!-- Рекомендации -->
-                <div class="card">
-                    <h3>Рекомендации</h3>
-                    <ul class="bullet-list placeholder-list">
-                        <li class="placeholder-item">Персональные рекомендации по развитию</li>
-                        <li class="placeholder-item">На основе результатов собеседования</li>
-                        <li class="placeholder-item">И выявленных зон роста</li>
-                    </ul>
-                </div>
+          <!-- График навыков -->
+          <div class="card">
+            <h3>Анализ навыков</h3>
+            <div class="radar-placeholder">
+              <div class="placeholder-icon">📊</div>
+              <div class="placeholder-text">
+                График навыков будет сгенерирован AI
+              </div>
+              <div class="placeholder-hint">
+                Алгоритмы • Оптимальность • Читаемость • Коммуникация
+              </div>
             </div>
+          </div>
+
+          <!-- Результаты по задачам -->
+          <div class="card">
+            <h3>Результаты по задачам</h3>
+            <div class="tasks-list">
+              <div class="task-item placeholder">
+                <span>Загрузка результатов задач...</span>
+                <span class="score-placeholder">--/10</span>
+              </div>
+              <div class="task-item placeholder">
+                <span>AI анализирует ваши решения</span>
+                <span class="score-placeholder">--/10</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="results-actions">
-            <button class="btn btn-secondary" onclick="goHome()">Вернуться на главную</button>
-            <button class="btn btn-primary" onclick="exportResults()">Экспорт отчета (PDF)</button>
+        <div class="results-right">
+          <!-- Сильные стороны -->
+          <div class="card">
+            <h3>Сильные стороны</h3>
+            <ul class="bullet-list placeholder-list">
+              <li class="placeholder-item">
+                AI определяет ваши сильные стороны
+              </li>
+              <li class="placeholder-item">
+                На основе качества кода и решений
+              </li>
+              <li class="placeholder-item">И анализа коммуникации</li>
+            </ul>
+          </div>
+
+          <!-- Рекомендации -->
+          <div class="card">
+            <h3>Рекомендации</h3>
+            <ul class="bullet-list placeholder-list">
+              <li class="placeholder-item">
+                Персональные рекомендации по развитию
+              </li>
+              <li class="placeholder-item">
+                На основе результатов собеседования
+              </li>
+              <li class="placeholder-item">И выявленных зон роста</li>
+            </ul>
+          </div>
         </div>
+      </div>
+
+      <div class="results-actions">
+        <button class="btn btn-secondary" onclick="goHome()">
+          Вернуться на главную
+        </button>
+        <button class="btn btn-primary" onclick="exportResults()">
+          Экспорт отчета (PDF)
+        </button>
+      </div>
     </div>
 
     <script>
-        function goHome() {
-            window.location.href = '/';
+      // Показываем модальное окно при загрузке страницы
+      document.addEventListener("DOMContentLoaded", function () {
+        // Проверяем, не вводил ли пользователь ФИО ранее
+        const savedFIO = localStorage.getItem("userFIO");
+        if (!savedFIO) {
+          showFIOModal();
+        } else {
+          // Если ФИО уже сохранено, можно использовать его при необходимости
+          console.log("ФИО пользователя:", savedFIO);
         }
-        
-        function exportResults() {
-            alert('Отчет будет доступен после обработки результатов');
+      });
+
+      function showFIOModal() {
+        const modal = document.getElementById("fioModal");
+        modal.style.display = "flex";
+
+        // Фокус на поле ввода
+        const fioInput = document.getElementById("fioInput");
+        fioInput.focus();
+
+        // Обработка нажатия Enter
+        fioInput.addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            saveFIO();
+          }
+        });
+      }
+
+      function saveFIO() {
+    const fio = document.getElementById("fioInput").value.trim();
+    if (!fio) {
+        alert("Введите ФИО");
+        return;
+    }
+
+    // Отправляем на сервер
+    fetch('/api/save-fio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fio: fio })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Скрываем модалку
+            document.getElementById("fioModal").style.display = "none";
+            // Опционально: обновляем интерфейс
+            document.querySelector('.results-header h1').textContent = `Результаты: ${fio}`;
+        } else {
+            alert('Ошибка сохранения');
         }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Не удалось сохранить данные');
+    });
+}
+
+      function goHome() {
+        window.location.href = "/";
+      }
+
+      function exportResults() {
+        alert("Отчет будет доступен после обработки результатов");
+      }
     </script>
-</body>
-
+  </body>
 </html>
-
