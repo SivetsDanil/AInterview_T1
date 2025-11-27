@@ -18,8 +18,8 @@ load_dotenv(dotenv_path=env_path)
 SITE_KEY = os.environ.get('SITE_KEY')
 SECRET_KEY_RECAPTCHA = os.environ.get('SECRET_KEY_RECAPTCHA')
 
-LOCAL_OPENAI_API_KEY = "sk-your-local-openai-key"
-LOCAL_OPENAI_BASE_URL = "https://api.openai.local/v1"
+LOCAL_OPENAI_API_KEY = "sk-gqlpOmmxNrBvLyv766GXYg"
+LOCAL_OPENAI_BASE_URL = "https://llm.t1v.scibox.tech/v1"
 
 # Настраиваем БД для сохранения интервью
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
