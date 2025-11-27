@@ -10,6 +10,7 @@
     <div class="container">
         <header class="header">
             <div class="logo">SciBox Interview</div>
+            <button class="admin-btn" onclick="goToAdmin()">Я админ</button>
         </header>
 
         <main class="welcome-section">
@@ -18,8 +19,7 @@
                 Полностью автоматизированный процесс с AI-интервьюером
             </p>
 
-            <h2>Выберите направление собеседования</h2>
-            <p class="direction-subtitle">Мы подберем задачи соответствующие вашему выбору</p>
+            <h2>Выберите направление собеседования:</h2>
 
             <div class="direction-grid">
                 <div class="direction-card" onclick="selectDirection(this)">
@@ -27,19 +27,19 @@
                     <div class="direction-name">Backend Development</div>
                     <div class="direction-desc">Алгоритмы, базы данных, API, системы распределения</div>
                 </div>
-                
+
                 <div class="direction-card" onclick="selectDirection(this)">
                     <div class="direction-icon">🎨</div>
                     <div class="direction-name">Frontend Development</div>
                     <div class="direction-desc">JavaScript, React, UI/UX, производительность браузера</div>
                 </div>
-                
+
                 <div class="direction-card" onclick="selectDirection(this)">
                     <div class="direction-icon">📊</div>
                     <div class="direction-name">Data Science</div>
                     <div class="direction-desc">Анализ данных, ML алгоритмы, статистика, визуализация</div>
                 </div>
-                
+
                 <div class="direction-card" onclick="selectDirection(this)">
                     <div class="direction-icon">📱</div>
                     <div class="direction-name">Mobile Development</div>
@@ -57,26 +57,39 @@
 
     <script>
         let selectedDirection = null;
-        
+
         function selectDirection(card) {
             document.querySelectorAll('.direction-card').forEach(c => {
                 c.classList.remove('selected');
             });
             card.classList.add('selected');
             selectedDirection = card.querySelector('.direction-name').textContent;
-            
+
             // Активируем кнопку
             document.getElementById('start-btn').disabled = false;
         }
-        
         function startInterview() {
             if (!selectedDirection) {
-                alert('Пожалуйста, выберите направление собеседования');
+                alert('Выберите направление');
                 return;
             }
-            window.location.href = 'interview';
+            // Отправляем направление на сервер
+            fetch('/api/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ direction: selectedDirection })
+            })
+            .then(() => {
+                window.location.href = '/interview';
+            })
+            .catch(err => {
+                console.error('Ошибка:', err);
+                alert('Не удалось начать собеседование');
+            });
         }
+        function goToAdmin() {
+        window.location.href = "/admin";
+      }
     </script>
 </body>
-
 </html>
