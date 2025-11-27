@@ -18,6 +18,9 @@ load_dotenv(dotenv_path=env_path)
 SITE_KEY = os.environ.get('SITE_KEY')
 SECRET_KEY_RECAPTCHA = os.environ.get('SECRET_KEY_RECAPTCHA')
 
+LOCAL_OPENAI_API_KEY = "sk-your-local-openai-key"
+LOCAL_OPENAI_BASE_URL = "https://api.openai.local/v1"
+
 # Настраиваем БД для сохранения интервью
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, 'interviews.db')
@@ -54,8 +57,8 @@ with app.app_context():
 # Инициализация TaskGenerator
 task_generator = None
 try:
-    api_key = os.environ.get('OPENAI_API_KEY')
-    base_url = os.environ.get('OPENAI_BASE_URL')
+    api_key = LOCAL_OPENAI_API_KEY
+    base_url = LOCAL_OPENAI_BASE_URL
     if api_key and base_url:
         task_generator = TaskGenerator(
             api_key=api_key,
