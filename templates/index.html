@@ -10,7 +10,6 @@
     <div class="container">
         <header class="header">
             <div class="logo">SciBox Interview</div>
-            <button class="admin-btn" onclick="goToAdmin()">Я админ</button>
         </header>
 
         <main class="welcome-section">
@@ -19,7 +18,8 @@
                 Полностью автоматизированный процесс с AI-интервьюером
             </p>
 
-            <h2>Выберите направление собеседования:</h2>
+            <h2>Выберите направление собеседования</h2>
+            <p class="direction-subtitle">Мы подберем задачи соответствующие вашему выбору</p>
 
             <div class="direction-grid">
                 <div class="direction-card" onclick="selectDirection(this)">
@@ -68,30 +68,15 @@
             // Активируем кнопку
             document.getElementById('start-btn').disabled = false;
         }
+        
         function startInterview() {
             if (!selectedDirection) {
-                alert('Выберите направление');
+                alert('Пожалуйста, выберите направление собеседования');
                 return;
             }
-            // Отправляем направление на сервер
-            fetch('/api/start', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ direction: selectedDirection })
-            })
-            .then(() => {
-                window.location.href = '/interview';
-            })
-            .catch(err => {
-                console.error('Ошибка:', err);
-                alert('Не удалось начать собеседование');
-            });
+            window.location.href = 'interview';
         }
-        function goToAdmin() {
-        window.location.href = "/admin";
-      }
     </script>
 </body>
+
 </html>
-
-

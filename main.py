@@ -1,33 +1,41 @@
 from flask import Flask, render_template, redirect, request, jsonify
 from flask_login import LoginManager, login_required, logout_user
-from flask import request, session, jsonify
-from ai_interviewer import setup_scibox, interview_step
-
 import requests
 from dotenv import load_dotenv
 import os
 from api import IndexAPI, InterviewAPI, ResultsAPI
 from task_gen import TaskGenerator
-from datetime import datetime, timezone
-from flask_sqlalchemy import SQLAlchemy
-import json
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = "key"
-load_dotenv()
+# Загружаем переменные окружения из .env файла
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path=env_path)
 SITE_KEY = os.environ.get('SITE_KEY')
 SECRET_KEY_RECAPTCHA = os.environ.get('SECRET_KEY_RECAPTCHA')
 
-
-from api.IndexAPI import blueprint as index_bp
-from api.InterviewAPI import blueprint as interview_bp
-from api.ResultsAPI import blueprint as results_bp
-
-# Регистрация (глобально!)
-app.register_blueprint(index_bp)
-app.register_blueprint(interview_bp)
-app.register_blueprint(results_bp)
-
+# Инициализация TaskGenerator
+task_generator = None
+try:
+    api_key = os.environ.get('OPENAI_API_KEY')
+    base_url = os.environ.get('OPENAI_BASE_URL')
+    if api_key and base_url:
+        task_generator = TaskGenerator(
+            api_key=api_key,
+            base_url=base_url
+        )
+        print("TaskGenerator initialized successfully")
+    else:
+        missing = []
+        if not api_key:
+            missing.append("OPENAI_API_KEY")
+        if not base_url:
+            missing.append("OPENAI_BASE_URL")
+        print(f"Warning: TaskGenerator not initialized - missing: {', '.join(missing)}")
+        print("Please create a .env file with OPENAI_API_KEY and OPENAI_BASE_URL")
+except Exception as e:
+    print(f"Warning: TaskGenerator not initialized: {str(e)}")
+    task_generator = None
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -35,49 +43,6 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 
-import os
-
-# === ИНИЦИАЛИЗАЦИЯ SciBox ПРИ СТАРТЕ ===
-SCIBOX_API_KEY = os.getenv("SCIBOX_API_KEY", "sk-gqlpOmmxNrBvLyv766GXYg")  # ← ваш ключ
-try:
-    setup_scibox(SCIBOX_API_KEY)
-    print("✅ SciBox инициализирован")
-except Exception as e:
-    print(f"❌ ОШИБКА инициализации SciBox: {e}")
-
-
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, 'interviews.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_PATH}'
-
-
-db = SQLAlchemy(app)
-
-
-# Модель записи интервью
-class Interview(db.Model):
-    __tablename__ = 'interviews'
-
-    id = db.Column(db.Integer, primary_key=True)
-    direction = db.Column(db.String(100), nullable=False)
-    fio = db.Column(db.String(100), nullable=False)
-    questionnaire = db.Column(db.Text, nullable=True)  # JSON-строка или NULL
-    started_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    session_id = db.Column(db.String(128), nullable=True)  # можно для отладки
-
-    def __repr__(self):
-        return f"<Interview {self.id}: {self.fio} — {self.direction}>"
-
-# Создаём таблицы (вызов один раз при первом запуске)
-with app.app_context():
-    db.create_all()
-
-
-
-
-
-login_manager.login_view = 'login'
 class User:
     def __init__(self, id):
         self.id = id
@@ -123,28 +88,23 @@ from flask import request, jsonify
 def chat():
     try:
         data = request.get_json()
+
+        # ВОТ СООБЩЕНИЕ ЮЗЕРА
         user_message = data.get('message', '').strip()
-        topic = data.get('topic', 'общая разработка').strip()  # ← важно: тема!
 
         if not user_message:
             return jsonify({'error': 'Empty message'}), 400
 
-        bot_reply, evaluation = interview_step(topic, user_message)
-        bot_reply = bot_reply.replace('<think>\n\n</think>\n\n', '')
-        print([bot_reply])
-        # Опционально: если пришла оценка — можно её сохранить или выделить
-        response_data = {
+        # ВОТ ТУТ ФОРМИРУЕТЕ ОТВЕТ
+        bot_reply = f"Умный ответ на твое {user_message}"
+
+        return jsonify({
             'reply': bot_reply,
             'status': 'success'
-        }
-        if evaluation is not None:
-            response_data['evaluation'] = evaluation
-
-        return jsonify(response_data)
+        })
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 
 from flask import request, jsonify
@@ -177,6 +137,17 @@ def handle_code_paste():
             'status': 'server_error',
             'message': error_msg
         }), 500
+
+
+def main():
+    # Сохраняем TaskGenerator в конфигурации приложения для доступа из blueprint
+    app.config['TASK_GENERATOR'] = task_generator
+
+    app.register_blueprint(IndexAPI.blueprint)
+    app.register_blueprint(InterviewAPI.blueprint)
+    app.register_blueprint(ResultsAPI.blueprint)
+
+    app.run(port=5000, host='127.0.0.1', debug=True)
 
 
 @app.route('/verify', methods=['POST'])
@@ -659,76 +630,14 @@ def review_code_endpoint():
             'result': result
         }), 200
 
-@app.route('/api/start', methods=['POST'])
-def start_interview():
-    data = request.get_json()
-    direction = data.get('direction')
-
-    if not direction:
-        return jsonify({'error': 'Направление не указано'}), 400
-
-    # Сохраняем в сессии
-    session['direction'] = direction
-    session['started_at'] = datetime.now().isoformat()
-    return jsonify({'success': True})
-
-
-@app.route('/api/save-fio', methods=['POST'])
-def save_fio():
-    data = request.get_json()
-    fio = data.get('fio')
-
-    if not fio or len(fio) > 100:
-        return jsonify({'success': False, 'error': 'Некорректное ФИО'}), 400
-
-    direction = session.get('direction')
-    started_at_str = session.get('started_at')
-
-    if not direction:
-        return jsonify({'success': False, 'error': 'Направление не найдено в сессии'}), 400
-
-    # Парсим started_at (если нужно — но можно и не брать из сессии, а писать прямо в БД)
-    try:
-        started_at = datetime.fromisoformat(started_at_str)
-    except (TypeError, ValueError):
-        started_at = datetime.now(timezone.utc)
-
-    # Создаём запись в БД
-    interview = Interview(
-        direction=direction,
-        fio=fio,
-        questionnaire=json.dumps({}),  # 🔹 ЗАГЛУШКА: пустая анкета как JSON
-        started_at=started_at,
-        session_id=session.sid if hasattr(session, 'sid') else None
-    )
-
-    try:
-        db.session.add(interview)
-        db.session.commit()
-        session['interview_id'] = interview.id  # сохраняем ID в сессию на будущее
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'error': 'Ошибка сохранения в БД', 'details': str(e)}), 500
-
-    session['fio'] = fio
-    return jsonify({'success': True})
-
-
-def init_db():
-    with app.app_context():
-        if 'interviews' not in db.metadata.tables:
-            print("⚠️  Таблица 'interviews' не найдена в метаданных — возможно, модель не импортирована")
-        db.create_all()
-init_db()
-
-def main():
-    app.run(port=5000, host='127.0.0.1', debug=True)
-
+        error_msg = f"Ошибка при обработке запроса: {str(e)}"
+        print(f"❌ Ошибка в /main: {error_msg}")
+        return jsonify({
+            'status': 'error',
+            'message': error_msg
+        }), 500
 
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        db_path = os.path.abspath(app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', ''))
-
-    app.run(port=5000, host='127.0.0.1', debug=True)
+    main()
